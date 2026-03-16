@@ -120,6 +120,7 @@ export function Playground() {
     videoPath: null as string | null,
     conditioningType: 'canny' as 'canny' | 'depth' | 'pose',
     conditioningStrength: 1.0,
+    useDetailer: true,
     ready: false,
   })
   const [icLoraPanelKey, setIcLoraPanelKey] = useState(0)
@@ -137,6 +138,7 @@ export function Playground() {
         conditioningType: icLoraCondType,
         conditioningStrength: icLoraStrength,
         prompt,
+        useDetailer: icLoraInput.useDetailer,
       })
       return
     }
@@ -205,6 +207,7 @@ export function Playground() {
       videoPath: null,
       conditioningType: 'canny',
       conditioningStrength: 1.0,
+      useDetailer: true,
       ready: false,
     })
     setIcLoraPanelKey((prev) => prev + 1)

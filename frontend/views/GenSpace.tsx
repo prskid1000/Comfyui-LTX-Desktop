@@ -333,6 +333,7 @@ function PromptBar({
   settings,
   onSettingsChange,
   shouldVideoGenerateWithLtxApi,
+  comfyuiEnabled = false,
   canGenerate,
   buttonLabel,
   buttonIcon,
@@ -367,6 +368,7 @@ function PromptBar({
   }
   onSettingsChange: (settings: any) => void
   shouldVideoGenerateWithLtxApi: boolean
+  comfyuiEnabled?: boolean
   icLoraCondType?: ICLoraConditioningType
   onIcLoraCondTypeChange?: (type: ICLoraConditioningType) => void
   icLoraStrength?: number
@@ -379,14 +381,25 @@ function PromptBar({
   const isRetake = mode === 'retake'
   const isIcLora = mode === 'ic-lora'
   const LOCAL_MAX_DURATION: Record<string, number> = { '540p': 20, '720p': 10, '1080p': 5 }
-  const localMaxDuration = LOCAL_MAX_DURATION[settings.videoResolution] ?? 20
-  const videoDurationOptions = shouldVideoGenerateWithLtxApi
-    ? [...getAllowedForcedApiDurations(settings.model, settings.videoResolution, settings.fps)]
-    : [5, 6, 8, 10, 20].filter(d => d <= localMaxDuration)
-  const videoResolutionOptions = shouldVideoGenerateWithLtxApi
-    ? (inputAudio ? ['1080p'] : [...FORCED_API_VIDEO_RESOLUTIONS])
-    : ['540p', '720p', '1080p']
-  const videoFpsOptions = shouldVideoGenerateWithLtxApi ? [...FORCED_API_VIDEO_FPS] : [24, 25, 50]
+  const COMFYUI_MAX_DURATION: Record<string, number> = {
+    '1080p': 5, '720p': 8, '576p': 10, '540p': 10, '480p': 10, '360p': 10,
+  }
+  const effectiveMaxDuration = comfyuiEnabled
+    ? (COMFYUI_MAX_DURATION[settings.videoResolution] ?? 10)
+    : (LOCAL_MAX_DURATION[settings.videoResolution] ?? 20)
+  const videoDurationOptions = comfyuiEnabled
+    ? [1, 2, 3, 4, 5, 6, 8, 10].filter(d => d <= effectiveMaxDuration)
+    : shouldVideoGenerateWithLtxApi
+      ? [...getAllowedForcedApiDurations(settings.model, settings.videoResolution, settings.fps)]
+      : [5, 6, 8, 10, 20].filter(d => d <= effectiveMaxDuration)
+  const videoResolutionOptions = comfyuiEnabled
+    ? ['1080p', '720p', '576p', '540p', '480p', '360p']
+    : shouldVideoGenerateWithLtxApi
+      ? (inputAudio ? ['1080p'] : [...FORCED_API_VIDEO_RESOLUTIONS])
+      : ['540p', '720p', '1080p']
+  const videoFpsOptions = comfyuiEnabled
+    ? [6, 12, 18, 24, 30]
+    : shouldVideoGenerateWithLtxApi ? [...FORCED_API_VIDEO_FPS] : [24, 25, 50]
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -670,22 +683,28 @@ function PromptBar({
               value={settings.model}
               onChange={(v) => onSettingsChange({ ...settings, model: v })}
               options={
-                shouldVideoGenerateWithLtxApi
+                comfyuiEnabled
                   ? [
-                      { value: 'fast', label: 'LTX-2.3 Fast (API)', disabled: !!inputAudio, tooltip: inputAudio ? 'Fast model is not available for Audio-to-Video' : undefined },
-                      { value: 'pro', label: 'LTX-2.3 Pro (API)' },
+                      { value: 'fast', label: 'LTX-2 19B (ComfyUI)' },
                     ]
-                  : [
-                      { value: 'fast', label: 'LTX 2.3 Fast' },
-                    ]
+                  : shouldVideoGenerateWithLtxApi
+                    ? [
+                        { value: 'fast', label: 'LTX-2.3 Fast (API)', disabled: !!inputAudio, tooltip: inputAudio ? 'Fast model is not available for Audio-to-Video' : undefined },
+                        { value: 'pro', label: 'LTX-2.3 Pro (API)' },
+                      ]
+                    : [
+                        { value: 'fast', label: 'LTX 2.3 Fast' },
+                      ]
               }
               trigger={
                 <>
                   <LightricksIcon className="h-3.5 w-3.5" />
                   <span className="text-zinc-300 font-medium">
-                    {shouldVideoGenerateWithLtxApi
-                      ? (settings.model === 'pro' ? 'LTX-2.3 Pro (API)' : 'LTX-2.3 Fast (API)')
-                      : 'LTX 2.3 Fast'}
+                    {comfyuiEnabled
+                      ? 'LTX-2 19B (ComfyUI)'
+                      : shouldVideoGenerateWithLtxApi
+                        ? (settings.model === 'pro' ? 'LTX-2.3 Pro (API)' : 'LTX-2.3 Fast (API)')
+                        : 'LTX 2.3 Fast'}
                   </span>
                 </>
               }
@@ -900,10 +919,11 @@ export function GenSpace() {
   const [settings, setSettings] = useState(() => ({ ...DEFAULT_VIDEO_SETTINGS }))
   const applyForcedVideoSettings = useCallback(
     (next: { model: string; duration: number; videoResolution: string; fps: number; audio: boolean; aspectRatio: string; imageResolution: string; variations: number }) => {
+      if (appSettings.comfyuiEnabled) return next
       if (!shouldVideoGenerateWithLtxApi || mode !== 'video') return next
       return sanitizeForcedApiVideoSettings(next, { hasAudio: !!inputAudio })
     },
-    [inputAudio, mode, shouldVideoGenerateWithLtxApi],
+    [appSettings.comfyuiEnabled, inputAudio, mode, shouldVideoGenerateWithLtxApi],
   )
   
   const {
@@ -953,6 +973,7 @@ export function GenSpace() {
     videoPath: null as string | null,
     conditioningType: 'canny' as ICLoraConditioningType,
     conditioningStrength: 1.0,
+    useDetailer: true,
     ready: false,
   })
   const [icLoraPanelKey, setIcLoraPanelKey] = useState(0)
@@ -1296,6 +1317,7 @@ export function GenSpace() {
         conditioningType: icLoraCondType,
         conditioningStrength: icLoraStrength,
         prompt,
+        useDetailer: icLoraInput.useDetailer,
       })
       return
     }
@@ -1664,6 +1686,7 @@ export function GenSpace() {
           settings={settings}
           onSettingsChange={(nextSettings) => setSettings(applyForcedVideoSettings(nextSettings))}
           shouldVideoGenerateWithLtxApi={shouldVideoGenerateWithLtxApi}
+          comfyuiEnabled={appSettings.comfyuiEnabled}
           icLoraCondType={icLoraCondType}
           onIcLoraCondTypeChange={setIcLoraCondType}
           icLoraStrength={icLoraStrength}

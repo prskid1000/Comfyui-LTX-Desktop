@@ -10,6 +10,7 @@ export interface IcLoraSubmitParams {
   conditioningType: IcLoraConditioningType
   conditioningStrength: number
   prompt: string
+  useDetailer?: boolean
 }
 
 export interface IcLoraResult {
@@ -53,6 +54,7 @@ export function useIcLora() {
             conditioning_type: params.conditioningType,
             conditioning_strength: params.conditioningStrength,
             prompt: params.prompt,
+            use_detailer: params.useDetailer ?? true,
           }
         : {
             video_path: params.videoPath,

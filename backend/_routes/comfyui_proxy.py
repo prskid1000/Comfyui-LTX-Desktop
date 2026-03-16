@@ -183,6 +183,7 @@ class ComfyUIIcLoraRequest(BaseModel):
     conditioning_strength: float = 1.0
     prompt: str
     seed: int | None = None
+    use_detailer: bool = True
     output_prefix: str = "ltxd_iclora"
 
 
@@ -497,7 +498,7 @@ def comfyui_ic_lora_generate(req: ComfyUIIcLoraRequest) -> ComfyUIGenerateRespon
         use_lora_depth=use_depth,
         use_lora_canny=use_canny,
         use_lora_pose=use_pose,
-        use_lora_detailer=True,
+        use_lora_detailer=req.use_detailer,
         use_audio=False,
         output_prefix=req.output_prefix,
     )

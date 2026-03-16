@@ -48,6 +48,8 @@ interface ICLoraPanelProps {
   onConditioningTypeChange?: (type: ICLoraConditioningType) => void
   conditioningStrength?: number
   onConditioningStrengthChange?: (strength: number) => void
+  useDetailer?: boolean
+  onUseDetailerChange?: (value: boolean) => void
   outputVideoUrl?: string | null
   outputVideoPath?: string | null
   comfyuiEnabled?: boolean
@@ -56,6 +58,7 @@ interface ICLoraPanelProps {
     videoPath: string | null
     conditioningType: ICLoraConditioningType
     conditioningStrength: number
+    useDetailer: boolean
     ready: boolean
   }) => void
 }
@@ -96,6 +99,8 @@ export function ICLoraPanel({
   conditioningStrength: conditioningStrengthProp,
   onConditioningStrengthChange,
   outputVideoUrl,
+  useDetailer: useDetailerProp,
+  onUseDetailerChange,
   outputVideoPath: _outputVideoPath,
   comfyuiEnabled = false,
   onChange,
@@ -107,8 +112,10 @@ export function ICLoraPanel({
 
   const [internalCondType, setInternalCondType] = useState<ICLoraConditioningType>('canny')
   const [internalCondStrength, setInternalCondStrength] = useState(1.0)
+  const [internalUseDetailer, setInternalUseDetailer] = useState(true)
   const conditioningType = conditioningTypeProp ?? internalCondType
   const conditioningStrength = conditioningStrengthProp ?? internalCondStrength
+  const useDetailer = useDetailerProp ?? internalUseDetailer
   const [conditioningPreview, setConditioningPreview] = useState<string | null>(null)
   const [isExtracting, setIsExtracting] = useState(false)
 
@@ -143,9 +150,10 @@ export function ICLoraPanel({
       videoPath: inputVideoPath,
       conditioningType,
       conditioningStrength,
+      useDetailer,
       ready,
     })
-  }, [inputVideoUrl, inputVideoPath, conditioningType, conditioningStrength, icLoraReady, onChange])
+  }, [inputVideoUrl, inputVideoPath, conditioningType, conditioningStrength, useDetailer, icLoraReady, onChange])
 
   const checkIcLoraAvailability = useCallback(async () => {
     setIsCheckingIcLora(true)
@@ -378,6 +386,23 @@ export function ICLoraPanel({
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-amber-400" />
           <span className="text-sm font-semibold text-white">IC-LoRA / Style Transfer</span>
+          {comfyuiEnabled && (
+            <button
+              onClick={() => {
+                const next = !useDetailer
+                setInternalUseDetailer(next)
+                onUseDetailerChange?.(next)
+              }}
+              className={`ml-2 px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                useDetailer
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  : 'bg-zinc-800 text-zinc-500 border border-zinc-700'
+              }`}
+              title="Detailer LoRA enhances fine details in the output"
+            >
+              Detailer {useDetailer ? 'ON' : 'OFF'}
+            </button>
+          )}
         </div>
         {inputVideoUrl && (
           <div className="flex items-center gap-2">
@@ -524,6 +549,8 @@ export function ICLoraPanel({
             </div>
           </div>
 
+          {/* Conditioning column — hidden when ComfyUI handles it internally */}
+          {!comfyuiEnabled && (
           <div className="flex-1 flex flex-col min-w-0">
             <div className="px-3 py-2 border-b border-zinc-800 flex items-center justify-between gap-2">
               <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Conditioning</span>
@@ -552,8 +579,10 @@ export function ICLoraPanel({
               )}
             </div>
           </div>
+          )}
 
-          {/* Output column */}
+          {/* Output column — hidden when ComfyUI is on since result shows in main VideoPlayer */}
+          {!comfyuiEnabled && (
           <div className="flex-1 flex flex-col border-l border-zinc-800 min-w-0">
             <div className="px-3 py-2 border-b border-zinc-800 flex items-center">
               <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Output</span>
@@ -577,6 +606,7 @@ export function ICLoraPanel({
               )}
             </div>
           </div>
+          )}
         </div>
       )}
 

@@ -87,7 +87,7 @@ export function SettingsPanel({
       : ['1080p', '720p', '540p']
 
   const fpsOptions = comfyuiEnabled
-    ? [24, 25]
+    ? [6, 12, 18, 24, 30]
     : forceApiGenerations ? [...FORCED_API_VIDEO_FPS] : [24, 25, 50]
 
   // Image mode settings
