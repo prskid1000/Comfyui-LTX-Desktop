@@ -188,9 +188,9 @@ def _get_comfyui_folder_paths(comfyui_url: str = _COMFYUI_URL) -> dict[str, list
     except Exception:
         pass
 
-    # Fallback: derive from ComfyUI installation path
-    comfyui_root = Path(__file__).resolve().parent.parent.parent.parent  # D:\.comfyui
-    comfyui_dir = comfyui_root / "ComfyUI"
+    # Fallback: derive from ComfyUI installation path (sibling of LTX-Desktop)
+    comfyui_root = Path(__file__).resolve().parent.parent.parent.parent
+    comfyui_dir = Path(os.environ.get("COMFYUI_DIR", str(comfyui_root / "ComfyUI")))
     models_dir = comfyui_dir / "models"
 
     return {

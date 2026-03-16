@@ -10,6 +10,7 @@ with any fixes applied (e.g. missing nodes). The originals are never modified.
 from __future__ import annotations
 
 import json
+import os
 import random
 from pathlib import Path
 from typing import Any
@@ -36,7 +37,7 @@ def _ensure_blank_image() -> str:
 
     Returns the filename (not full path) for use in LoadImage nodes.
     """
-    comfyui_root = _WORKFLOWS_DIR.parent.parent.parent.parent / "ComfyUI"
+    comfyui_root = Path(os.environ.get("COMFYUI_DIR", str(_WORKFLOWS_DIR.parent.parent.parent.parent / "ComfyUI")))
     input_dir = comfyui_root / "input"
     blank_path = input_dir / "_blank_placeholder.png"
     if not blank_path.exists():

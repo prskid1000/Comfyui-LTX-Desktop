@@ -6,6 +6,7 @@ Startup runs in a background thread so it never blocks the API server.
 from __future__ import annotations
 
 import logging
+import os
 import subprocess
 import threading
 import time
@@ -15,15 +16,23 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-_COMFYUI_ROOT = Path(__file__).resolve().parent.parent.parent.parent  # D:\.comfyui
-_COMFYUI_DIR = _COMFYUI_ROOT / "ComfyUI"
+# Expected layout: LTX-Desktop and ComfyUI are siblings under the same root.
+#   <root>/ComfyUI/       — ComfyUI installation
+#   <root>/.venv/         — Python venv with ComfyUI dependencies
+#   <root>/LTX-Desktop/   — This repo
+# Override with env vars: COMFYUI_DIR, COMFYUI_VENV_PYTHON
+_COMFYUI_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+_COMFYUI_DIR = Path(os.environ.get("COMFYUI_DIR", str(_COMFYUI_ROOT / "ComfyUI")))
 _COMFYUI_MAIN = _COMFYUI_DIR / "main.py"
 
 # Discover the venv Python that has all ComfyUI dependencies.
-_VENV_PYTHON = _COMFYUI_ROOT / ".venv" / "Scripts" / "python.exe"
-if not _VENV_PYTHON.exists():
-    # Fallback: try Linux-style path
-    _VENV_PYTHON = _COMFYUI_ROOT / ".venv" / "bin" / "python"
+_env_python = os.environ.get("COMFYUI_VENV_PYTHON")
+if _env_python:
+    _VENV_PYTHON = Path(_env_python)
+else:
+    _VENV_PYTHON = _COMFYUI_ROOT / ".venv" / "Scripts" / "python.exe"
+    if not _VENV_PYTHON.exists():
+        _VENV_PYTHON = _COMFYUI_ROOT / ".venv" / "bin" / "python"
 
 _DEFAULT_ARGS = [
     "--listen",

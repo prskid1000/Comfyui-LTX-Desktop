@@ -1081,6 +1081,7 @@ export function VideoEditor() {
     regenCancel, regenReset, regenError,
     projectId: currentProjectId ?? '',
     shouldVideoGenerateWithLtxApi,
+    comfyuiEnabled: appSettings.comfyuiEnabled,
   })
   const canUseIcLora = !forceApiGenerations || appSettings.comfyuiEnabled
   

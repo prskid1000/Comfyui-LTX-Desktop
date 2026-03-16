@@ -1,202 +1,368 @@
-# LTX Desktop
+# LTX Desktop + ComfyUI Integration
 
-LTX Desktop is an open-source desktop app for generating videos with LTX models — locally on supported Windows/Linux NVIDIA GPUs, with an API mode for unsupported hardware and macOS.
+LTX Desktop with a built-in ComfyUI proxy layer that routes all generation (video, image, audio-video, IC-LoRA, retake) through local ComfyUI workflows using GGUF-quantized models.
 
 > **Status: Beta.** Expect breaking changes.
-> Frontend architecture is under active refactor; large UI PRs may be declined for now (see [`CONTRIBUTING.md`](docs/CONTRIBUTING.md)).
 
 <p align="center">
-  <img src="images/gen-space.png" alt="Gen Space" width="70%">
+  <img src="images/electron_ERPdoyj2Jq.png" alt="Gen Space with ComfyUI" width="80%">
 </p>
 
 <p align="center">
-  <img src="images/video-editor.png" alt="Video Editor" width="70%">
-</p>
-
-<p align="center">
-  <img src="images/timeline-gap-fill.png" alt="Timeline gap fill" width="70%">
+  <img src="images/explorer_cr55b3Zf2b.png" alt="Playground ComfyUI Settings" width="45%">
+  <img src="images/explorer_VB8GN8k1Mv.png" alt="IC-LoRA with Detailer" width="45%">
 </p>
 
 ## Features
 
-- Text-to-video generation
-- Image-to-video generation
-- Audio-to-video generation
-- Video edit generation (Retake)
-- Video Editor Interface
-- Video Editing Projects
+### Generation Modes (via ComfyUI)
 
-## Local vs API mode
+| Mode | Workflow | Model |
+|------|----------|-------|
+| **Text-to-Video (T2V)** | `av_movie.json` | LTX-2 19B GGUF (Q4_K_M) |
+| **Image-to-Video (I2V)** | `av_movie.json` | LTX-2 19B + guide image |
+| **Audio-to-Video (A2V)** | `av_movie.json` | LTX-2 19B + audio VAE |
+| **Text-to-Image** | `image_scene.json` | Flux Kontext GGUF (Q8_0) |
+| **Character Image** | `image_character.json` | Flux Kontext GGUF (Q8_0) |
+| **IC-LoRA (Depth)** | `av_movie.json` + LoRA | Depth control LoRA |
+| **IC-LoRA (Canny)** | `av_movie.json` + LoRA | Canny control LoRA |
+| **IC-LoRA (Pose)** | `av_movie.json` + LoRA | Pose control LoRA |
+| **IC-LoRA (Detailer)** | `av_movie.json` + LoRA | Detailer enhancement LoRA |
+| **Retake (Temporal Inpainting)** | `retake_inpaint.json` | LTX-2 19B + distilled LoRA |
 
-| Platform / hardware | Generation mode | Notes |
-| --- | --- | --- |
-| Windows + CUDA GPU with **≥32GB VRAM** | Local generation | Downloads model weights locally |
-| Windows (no CUDA, <32GB VRAM, or unknown VRAM) | API-only | **LTX API key required** |
-| Linux + CUDA GPU with **≥32GB VRAM** | Local generation | Downloads model weights locally |
-| Linux (no CUDA, <32GB VRAM, or unknown VRAM) | API-only | **LTX API key required** |
-| macOS (Apple Silicon builds) | API-only | **LTX API key required** |
+### Additional Features
 
-In API-only mode, available resolutions/durations may be limited to what the API supports.
+- ComfyUI auto-starts in the background when needed
+- Auto-detect and download missing models from HuggingFace
+- All native LTX Desktop features (editor, timeline, export) still work
+- Toggle between ComfyUI and native pipelines in Settings
+- Progress tracking during generation
+- Seed lock support
+- Resolution: 360p to 1080p
+- Duration: 1s to 10s
+- FPS: 6, 12, 18, 24, 30
 
-## System requirements
+---
 
-### Windows (local generation)
+## Directory Structure (Required Layout)
 
-- Windows 10/11 (x64)
-- NVIDIA GPU with CUDA support and **≥32GB VRAM** (more is better)
-- 16GB+ RAM (32GB recommended)
-- **160GB+ free disk space** (for model weights, Python environment, and outputs)
+**ComfyUI and LTX-Desktop must be siblings under the same parent directory.** The backend resolves paths by walking up from `backend/_services/` to find the parent root, then looks for `ComfyUI/` and `.venv/` as siblings.
 
-### Linux (local generation)
-
-- Ubuntu 22.04+ or similar distro (x64 or arm64)
-- NVIDIA GPU with CUDA support and **≥32GB VRAM** (more is better)
-- NVIDIA driver installed (PyTorch bundles the CUDA runtime)
-- 16GB+ RAM (32GB recommended)
-- Plenty of free disk space for model weights and outputs
-
-### macOS (API-only)
-
-- Apple Silicon (arm64)
-- macOS 13+ (Ventura)
-- Stable internet connection
-
-## Install
-
-1. Download the latest installer from GitHub Releases: [Releases](../../releases)
-2. Install and launch **LTX Desktop**
-3. Complete first-run setup
-
-## First run & data locations
-
-LTX Desktop stores app data (settings, models, logs) in:
-
-- **Windows:** `%LOCALAPPDATA%\LTXDesktop\`
-- **macOS:** `~/Library/Application Support/LTXDesktop/`
-- **Linux:** `$XDG_DATA_HOME/LTXDesktop/` (default: `~/.local/share/LTXDesktop/`)
-
-Model weights are downloaded into the `models/` subfolder (this can be large and may take time).
-
-On first launch you may be prompted to review/accept model license terms (license text is fetched from Hugging Face; requires internet).
-
-Text encoding: to generate videos you must configure text encoding:
-
-- **LTX API key** (cloud text encoding) — **text encoding via the API is completely FREE** and highly recommended to speed up inference and save memory. Generate a free API key at the [LTX Console](https://console.ltx.video/). [Read more](https://ltx.io/model/model-blog/ltx-2-better-control-for-real-workflows).
-- **Local Text Encoder** (extra download; enables fully-local operation on supported Windows hardware) — if you don't wish to generate an API key, you can encode text locally via the settings menu.
-
-## API keys, cost, and privacy
-
-### LTX API key
-
-The LTX API is used for:
-
-- **Cloud text encoding and prompt enhancement** — **FREE**; text encoding is highly recommended to speed up inference and save memory
-- API-based video generations (required on macOS and on unsupported Windows hardware) — paid
-- Retake — paid
-
-An LTX API key is required in API-only mode, but optional on Windows/Linux local mode if you enable the Local Text Encoder.
-
-Generate a FREE API key at the [LTX Console](https://console.ltx.video/). Text encoding is free; video generation API usage is paid. [Read more](https://ltx.io/model/model-blog/ltx-2-better-control-for-real-workflows).
-
-When you use API-backed features, prompts and media inputs are sent to the API service. Your API key is stored locally in your app data folder — treat it like a secret.
-
-### fal API key (optional)
-
-Used for Z Image Turbo text-to-image generation in API mode. When enabled, image generation requests are sent to fal.ai.
-
-Create an API key in the [fal dashboard](https://fal.ai/dashboard/keys).
-
-### Gemini API key (optional)
-
-Used for AI prompt suggestions. When enabled, prompt context and frames may be sent to Google Gemini.
-
-## Architecture
-
-LTX Desktop is split into three main layers:
-
-- **Renderer (`frontend/`)**: TypeScript + React UI.
-  - Calls the local backend over HTTP at `http://localhost:8000`.
-  - Talks to Electron via the preload bridge (`window.electronAPI`).
-- **Electron (`electron/`)**: TypeScript main process + preload.
-  - Owns app lifecycle and OS integration (file dialogs, native export via ffmpeg, starting/managing the Python backend).
-  - Security: renderer is sandboxed (`contextIsolation: true`, `nodeIntegration: false`).
-- **Backend (`backend/`)**: Python + FastAPI local server.
-  - Orchestrates generation, model downloads, and GPU execution.
-  - Calls external APIs only when API-backed features are used.
-
-```mermaid
-graph TD
-  UI["Renderer (React + TS)"] -->|HTTP: localhost:8000| BE["Backend (FastAPI + Python)"]
-  UI -->|IPC via preload: window.electronAPI| EL["Electron main (TS)"]
-  EL --> OS["OS integration (files, dialogs, ffmpeg, process mgmt)"]
-  BE --> GPU["Local models + GPU (when supported)"]
-  BE --> EXT["External APIs (only for API-backed features)"]
-  EL --> DATA["App data folder (settings/models/logs)"]
-  BE --> DATA
+```
+<root>\                               # e.g. D:\.comfyui\
+├── ComfyUI\                          # ComfyUI installation (MUST be sibling of LTX-Desktop)
+│   ├── main.py
+│   ├── input\                        # Input files (images, audio, video)
+│   ├── output\                       # Generated outputs
+│   └── models\                       # All model files (see below)
+│       ├── unet\
+│       ├── clip\
+│       ├── text_encoders\
+│       ├── vae\
+│       ├── loras\
+│       └── latent_upscale_models\
+├── .venv\                            # Python venv with ComfyUI dependencies
+├── LTX-Desktop\                      # This repo
+│   ├── backend\
+│   │   ├── _services\
+│   │   │   ├── comfyui_client.py     # HTTP client for ComfyUI API
+│   │   │   ├── comfyui_workflows.py  # Workflow template builders
+│   │   │   ├── comfyui_process.py    # Auto-start ComfyUI subprocess
+│   │   │   ├── comfyui_model_manager.py  # Model status & download
+│   │   │   └── workflows\           # Workflow JSON templates
+│   │   │       ├── av_movie.json     # Video/AV generation
+│   │   │       ├── image_scene.json  # Flux scene image
+│   │   │       ├── image_character.json  # Flux character image
+│   │   │       └── retake_inpaint.json   # Temporal inpainting
+│   │   └── _routes\
+│   │       └── comfyui_proxy.py      # API endpoints (/api/comfyui/*)
+│   └── frontend\
+│       ├── hooks\
+│       │   ├── use-generation.ts     # Routes to ComfyUI when enabled
+│       │   ├── use-retake.ts         # ComfyUI retake support
+│       │   └── use-ic-lora.ts        # ComfyUI IC-LoRA support
+│       ├── components\
+│       │   ├── SettingsPanel.tsx      # ComfyUI-aware settings
+│       │   ├── SettingsModal.tsx      # ComfyUI toggle + URL config
+│       │   └── ICLoraPanel.tsx        # IC-LoRA with detailer toggle
+│       └── contexts\
+│           └── AppSettingsContext.tsx  # comfyuiEnabled + comfyuiUrl
+├── gen.video\                        # Original video workflows (reference)
+├── gen.av\                           # Original AV workflows (reference)
+├── gen.image\                        # Original image workflows (reference)
+└── gen.audio\                        # Original audio workflows (reference)
 ```
 
-## Development (quickstart)
+### Environment Variable Overrides
 
-Prereqs:
+If your ComfyUI is installed elsewhere, set these env vars before running `pnpm dev`:
 
-- Node.js
-- `uv` (Python package manager)
-- Python 3.12+
-- Git
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `COMFYUI_DIR` | `<root>/ComfyUI` | Path to ComfyUI installation |
+| `COMFYUI_BASE_URL` | `http://127.0.0.1:8188` | ComfyUI HTTP URL |
+| `COMFYUI_VENV_PYTHON` | `<root>/.venv/Scripts/python.exe` | Python executable with ComfyUI deps |
 
-Setup:
-
+Example:
 ```bash
-pnpm setup:dev
-```
-
-Run:
-
-```bash
+set COMFYUI_DIR=E:\MyComfyUI
+set COMFYUI_VENV_PYTHON=E:\MyComfyUI\venv\Scripts\python.exe
 pnpm dev
 ```
 
-Debug:
+---
+
+## Setup from Scratch
+
+### Prerequisites
+
+- **Windows 10/11** with NVIDIA GPU (CUDA support)
+- **Node.js** 18+ and **pnpm**
+- **Python 3.12+**
+- **uv** (Python package manager): `pip install uv`
+- **Git**
+
+### Step 1: Clone and Install
 
 ```bash
-pnpm dev:debug
+# Clone the repo
+cd D:\.comfyui
+git clone <repo-url> LTX-Desktop
+cd LTX-Desktop
+
+# Install frontend dependencies
+pnpm install
+
+# Create backend Python venv
+cd backend
+uv sync
+cd ..
 ```
 
-`dev:debug` starts Electron with inspector enabled and starts the Python backend with `debugpy`.
-
-Typecheck:
+### Step 2: Install ComfyUI
 
 ```bash
-pnpm typecheck
+cd D:\.comfyui
+
+# Clone ComfyUI
+git clone https://github.com/comfyanonymous/ComfyUI.git
+
+# Create a shared venv for ComfyUI
+python -m venv .venv
+.venv\Scripts\activate
+
+# Install ComfyUI dependencies
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+pip install -r ComfyUI\requirements.txt
+
+# Install required custom nodes
+# ComfyUI-GGUF (for GGUF model loading)
+cd ComfyUI\custom_nodes
+git clone https://github.com/city96/ComfyUI-GGUF.git
+pip install -r ComfyUI-GGUF\requirements.txt
+
+# VideoHelperSuite (for VHS_LoadVideo, VHS_VideoCombine)
+git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
+pip install -r ComfyUI-VideoHelperSuite\requirements.txt
+
+cd D:\.comfyui
+deactivate
 ```
 
-Backend tests:
+### Step 3: Download Models
+
+All models go in `D:\.comfyui\ComfyUI\models\`. The app can auto-download missing models via `POST /api/comfyui/models/download`, or you can download manually:
+
+#### UNet / Diffusion Models
+
+| File | Size | Location | Source |
+|------|------|----------|--------|
+| `ltx-2-19b-distilled_Q4_K_M.gguf` | ~10 GB | `models/unet/` | [Kijai/LTXV2_comfy](https://huggingface.co/Kijai/LTXV2_comfy) |
+| `flux1-kontext-dev-Q8_0.gguf` | ~12.7 GB | `models/unet/` | [QuantStack/FLUX.1-Kontext-dev-GGUF](https://huggingface.co/QuantStack/FLUX.1-Kontext-dev-GGUF) |
+
+#### CLIP / Text Encoders
+
+| File | Size | Location | Source |
+|------|------|----------|--------|
+| `gemma_3_12B_it_fp8_e4m3fn.safetensors` | ~12 GB | `models/text_encoders/` | [Kijai/LTXV2_comfy](https://huggingface.co/Kijai/LTXV2_comfy) |
+| `ltx-2-19b-embeddings_connector_distill_bf16.safetensors` | ~1.5 GB | `models/clip/` | [Kijai/LTXV2_comfy](https://huggingface.co/Kijai/LTXV2_comfy) |
+| `t5xxl_fp8_e4m3fn.safetensors` | ~4.9 GB | `models/clip/` | [comfyanonymous/flux_text_encoders](https://huggingface.co/comfyanonymous/flux_text_encoders) |
+| `clip_l.safetensors` | ~246 MB | `models/clip/` | [comfyanonymous/flux_text_encoders](https://huggingface.co/comfyanonymous/flux_text_encoders) |
+
+#### VAE
+
+| File | Size | Location | Source |
+|------|------|----------|--------|
+| `LTX2_video_vae_bf16.safetensors` | ~330 MB | `models/vae/` | [Kijai/LTXV2_comfy](https://huggingface.co/Kijai/LTXV2_comfy) |
+| `LTX2_audio_vae_bf16.safetensors` | ~330 MB | `models/vae/` | [Kijai/LTXV2_comfy](https://huggingface.co/Kijai/LTXV2_comfy) |
+| `flux_kontext_vae.safetensors` | ~335 MB | `models/vae/` | [black-forest-labs/FLUX.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev) |
+
+#### LoRAs
+
+| File | Size | Location | Source |
+|------|------|----------|--------|
+| `ltx-2-19b-ic-lora-depth-control.safetensors` | ~625 MB | `models/loras/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
+| `ltx-2-19b-ic-lora-canny-control.safetensors` | ~625 MB | `models/loras/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
+| `ltx-2-19b-ic-lora-pose-control.safetensors` | ~625 MB | `models/loras/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
+| `ltx-2-19b-ic-lora-detailer.safetensors` | ~2.5 GB | `models/loras/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
+| `ltx-2-19b-distilled-lora-384.safetensors` | ~7.67 GB | `models/loras/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
+
+#### Upscalers
+
+| File | Size | Location | Source |
+|------|------|----------|--------|
+| `ltx-2-spatial-upscaler-x2-1.0.safetensors` | ~996 MB | `models/latent_upscale_models/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
+| `ltx-2-temporal-upscaler-x2-1.0.safetensors` | ~262 MB | `models/latent_upscale_models/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
+
+**Total model size: ~55 GB**
+
+#### Quick Download (using huggingface_hub)
 
 ```bash
-pnpm backend:test
+# Activate ComfyUI venv
+cd D:\.comfyui
+.venv\Scripts\activate
+
+pip install huggingface_hub
+
+# Download all models (run from ComfyUI/models directory)
+cd ComfyUI\models
+
+# UNet
+huggingface-cli download Kijai/LTXV2_comfy diffusion_models/ltx-2-19b-distilled_Q4_K_M.gguf --local-dir unet
+huggingface-cli download QuantStack/FLUX.1-Kontext-dev-GGUF FLUX.1-Kontext-dev-Q8_0.gguf --local-dir unet
+
+# Text Encoders
+huggingface-cli download Kijai/LTXV2_comfy text_encoders/gemma_3_12B_it_fp8_e4m3fn.safetensors --local-dir text_encoders
+huggingface-cli download Kijai/LTXV2_comfy text_encoders/ltx-2-19b-embeddings_connector_distill_bf16.safetensors --local-dir clip
+huggingface-cli download comfyanonymous/flux_text_encoders t5xxl_fp8_e4m3fn.safetensors --local-dir clip
+huggingface-cli download comfyanonymous/flux_text_encoders clip_l.safetensors --local-dir clip
+
+# VAE
+huggingface-cli download Kijai/LTXV2_comfy vae/LTX2_video_vae_bf16.safetensors --local-dir vae
+huggingface-cli download Kijai/LTXV2_comfy vae/LTX2_audio_vae_bf16.safetensors --local-dir vae
+# Flux VAE: download from black-forest-labs/FLUX.1-dev vae/diffusion_pytorch_model.safetensors and rename to flux_kontext_vae.safetensors
+
+# LoRAs
+huggingface-cli download Lightricks/LTX-2 ltx-2-19b-ic-lora-depth-control.safetensors --local-dir loras
+huggingface-cli download Lightricks/LTX-2 ltx-2-19b-ic-lora-canny-control.safetensors --local-dir loras
+huggingface-cli download Lightricks/LTX-2 ltx-2-19b-ic-lora-pose-control.safetensors --local-dir loras
+huggingface-cli download Lightricks/LTX-2 ltx-2-19b-ic-lora-detailer.safetensors --local-dir loras
+huggingface-cli download Lightricks/LTX-2 ltx-2-19b-distilled-lora-384.safetensors --local-dir loras
+
+# Upscalers
+huggingface-cli download Lightricks/LTX-2 ltx-2-spatial-upscaler-x2-1.0.safetensors --local-dir latent_upscale_models
+huggingface-cli download Lightricks/LTX-2 ltx-2-temporal-upscaler-x2-1.0.safetensors --local-dir latent_upscale_models
+
+deactivate
 ```
 
-Building installers:
-- See [`INSTALLER.md`](docs/INSTALLER.md)
+### Step 4: Verify Setup
 
-## Telemetry
+```bash
+# Test ComfyUI starts
+cd D:\.comfyui
+.venv\Scripts\python.exe ComfyUI\main.py --listen --async-offload 16
 
-LTX Desktop collects minimal, anonymous usage analytics (app version, platform, and a random installation ID) to help prioritize development. No personal information or generated content is collected. Analytics is enabled by default and can be disabled in **Settings > General > Anonymous Analytics**. See [`TELEMETRY.md`](docs/TELEMETRY.md) for details.
+# Should see: "Starting server" on http://0.0.0.0:8188
+# Open http://127.0.0.1:8188 in browser to verify
+# Ctrl+C to stop
+```
 
-## Docs
+### Step 5: Run LTX Desktop
 
-- [`INSTALLER.md`](docs/INSTALLER.md) — building installers
-- [`TELEMETRY.md`](docs/TELEMETRY.md) — telemetry and privacy
-- [`backend/architecture.md`](backend/architecture.md) — backend architecture
+```bash
+cd D:\.comfyui\LTX-Desktop
+pnpm dev
+```
 
-## Contributing
+1. Open the app
+2. Go to **Settings** (gear icon) > **General**
+3. Toggle **Enable ComfyUI Proxy** on
+4. (Optional) Change ComfyUI URL if not `http://127.0.0.1:8188`
+5. Start generating!
 
-See [`CONTRIBUTING.md`](docs/CONTRIBUTING.md).
+ComfyUI will auto-start in the background when you generate for the first time.
+
+---
+
+## API Endpoints
+
+All ComfyUI proxy endpoints are under `/api/comfyui/`:
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/comfyui/health` | GET | Check ComfyUI availability |
+| `/api/comfyui/progress` | GET | Poll generation progress |
+| `/api/comfyui/models/status` | GET | Check which models are installed |
+| `/api/comfyui/models/download` | POST | Download missing models |
+| `/api/comfyui/generate/video` | POST | Generate video (T2V / I2V) |
+| `/api/comfyui/generate/av` | POST | Generate audio-video (A2V) |
+| `/api/comfyui/generate/image` | POST | Generate image (Flux) |
+| `/api/comfyui/generate/raw` | POST | Submit raw workflow JSON |
+| `/api/comfyui/retake` | POST | Temporal inpainting (retake) |
+| `/api/comfyui/ic-lora/generate` | POST | IC-LoRA conditioned generation |
+
+---
+
+## ComfyUI Startup Flags
+
+The auto-start uses these flags (same as `comfyui.bat`):
+
+```
+python ComfyUI\main.py --listen --async-offload 16 --cache-none --disable-smart-memory --reserve-vram 0.3
+```
+
+| Flag | Purpose |
+|------|---------|
+| `--listen` | Listen on all interfaces |
+| `--async-offload 16` | Async model offloading (16 layers) |
+| `--cache-none` | Disable caching for lower VRAM |
+| `--disable-smart-memory` | Disable smart memory management |
+| `--reserve-vram 0.3` | Reserve 0.3 GB VRAM for system |
+
+---
+
+## Switching Between ComfyUI and Native Mode
+
+All ComfyUI integration is toggle-based. When **ComfyUI is OFF**, the app works exactly like the original LTX Desktop with native pipelines and API keys.
+
+When **ComfyUI is ON**:
+- Settings hides: API keys, inference, prompt enhancer, text encoding, torch compile, model preload
+- Settings shows: ComfyUI toggle, URL config
+- Generation routes through ComfyUI workflows
+- Models are loaded by ComfyUI (not the native pipeline)
+- All editor features (regenerate, I2V, gap fill) use ComfyUI
+- IC-LoRA panel shows Input only (no conditioning preview column)
+- Camera motion and audio on/off toggles are hidden
+
+---
+
+## Troubleshooting
+
+### ComfyUI won't start
+- Check the `.venv` exists at `D:\.comfyui\.venv\Scripts\python.exe`
+- Try starting manually: `D:\.comfyui\.venv\Scripts\python.exe ComfyUI\main.py --listen`
+- Check for port conflicts on 8188
+
+### Models not found
+- Run `GET /api/comfyui/models/status` to see which are missing
+- Run `POST /api/comfyui/models/download` to auto-download
+- Or download manually using the table above
+
+### Generation fails with 400/502
+- Check ComfyUI console for node validation errors
+- Ensure all required custom nodes are installed (ComfyUI-GGUF, VideoHelperSuite)
+- Verify model files are in the correct directories
+
+### Backend won't start (LTX Desktop)
+- Ensure `backend/.venv` exists: `cd backend && uv sync`
+- Or create a junction: `mklink /J backend\.venv D:\.comfyui\.venv` (if using shared venv)
+
+---
 
 ## License
 
-Apache-2.0 — see [`LICENSE.txt`](LICENSE.txt).
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
 
-Third-party notices (including model licenses/terms): [`NOTICES.md`](NOTICES.md).
-
-Model weights are downloaded separately and may be governed by additional licenses/terms.
+LTX-2 model weights are subject to the [LTX-2 Community License Agreement](https://huggingface.co/Lightricks/LTX-2/blob/main/LICENSE).

@@ -32,6 +32,7 @@ export interface UseRegenerationParams {
   regenError: string | null
   projectId: string
   shouldVideoGenerateWithLtxApi: boolean
+  comfyuiEnabled: boolean
 }
 
 export function useRegeneration(params: UseRegenerationParams) {
@@ -46,6 +47,7 @@ export function useRegeneration(params: UseRegenerationParams) {
     regenError,
     projectId,
     shouldVideoGenerateWithLtxApi,
+    comfyuiEnabled,
   } = params
 
   // Track which asset/clip is being regenerated
@@ -72,9 +74,9 @@ export function useRegeneration(params: UseRegenerationParams) {
   })
 
   useEffect(() => {
-    if (!shouldVideoGenerateWithLtxApi) return
+    if (!shouldVideoGenerateWithLtxApi || comfyuiEnabled) return
     setI2vSettings((prev) => sanitizeForcedApiVideoSettings(prev))
-  }, [shouldVideoGenerateWithLtxApi])
+  }, [shouldVideoGenerateWithLtxApi, comfyuiEnabled])
 
   const handleI2vGenerate = useCallback(async () => {
     if (!i2vClipId || !i2vPrompt.trim() || !currentProjectId) return
@@ -96,7 +98,7 @@ export function useRegeneration(params: UseRegenerationParams) {
       ...i2vSettings,
       duration: Math.min(Math.max(1, Math.round(clip.duration)), i2vSettings.model === 'pro' ? 10 : 20),
     }
-    const settings = shouldVideoGenerateWithLtxApi ? sanitizeForcedApiVideoSettings(rawSettings) : rawSettings
+    const settings = (shouldVideoGenerateWithLtxApi && !comfyuiEnabled) ? sanitizeForcedApiVideoSettings(rawSettings) : rawSettings
 
     try {
       await regenGenerate(i2vPrompt, imagePath, settings)
@@ -118,7 +120,7 @@ export function useRegeneration(params: UseRegenerationParams) {
         const copied = await copyToAssetFolder(srcPath, projectId)
         const finalPath = copied?.path ?? srcPath
         const finalUrl = copied?.url ?? regenVideoUrl
-        const savedI2vSettings = shouldVideoGenerateWithLtxApi
+        const savedI2vSettings = (shouldVideoGenerateWithLtxApi && !comfyuiEnabled)
           ? sanitizeForcedApiVideoSettings({
               ...i2vSettings,
               duration: Math.min(Math.max(1, Math.round(clip.duration)), i2vSettings.model === 'pro' ? 10 : 20),
@@ -305,7 +307,7 @@ export function useRegeneration(params: UseRegenerationParams) {
         imageAspectRatio: params.imageAspectRatio || '16:9',
         imageSteps: params.imageSteps || 4,
       }
-      const videoSettings = shouldVideoGenerateWithLtxApi
+      const videoSettings = (shouldVideoGenerateWithLtxApi && !comfyuiEnabled)
         ? sanitizeForcedApiVideoSettings(rawVideoSettings)
         : rawVideoSettings
 
