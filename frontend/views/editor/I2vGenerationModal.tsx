@@ -18,6 +18,7 @@ interface I2vGenerationModalProps {
   regenReset: () => void
   handleI2vGenerate: () => void
   shouldVideoGenerateWithLtxApi: boolean
+  comfyuiEnabled?: boolean
 }
 
 export function I2vGenerationModal({
@@ -35,6 +36,7 @@ export function I2vGenerationModal({
   regenReset,
   handleI2vGenerate,
   shouldVideoGenerateWithLtxApi,
+  comfyuiEnabled = false,
 }: I2vGenerationModalProps) {
   if (!i2vClipId) return null
 
@@ -103,6 +105,7 @@ export function I2vGenerationModal({
                 disabled={isRegenerating}
                 mode="image-to-video"
                 forceApiGenerations={shouldVideoGenerateWithLtxApi}
+                comfyuiEnabled={comfyuiEnabled}
               />
             </div>
           </div>

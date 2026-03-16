@@ -44,6 +44,7 @@ interface GapGenerationModalProps {
   regenerateSuggestion: () => void
   gapSuggestionError?: boolean
   gapSuggestionNoApiKey?: boolean
+  comfyuiEnabled?: boolean
 }
 
 export function GapGenerationModal({
@@ -74,6 +75,7 @@ export function GapGenerationModal({
   gapSuggestionError,
   gapSuggestionNoApiKey,
   anchorPosition,
+  comfyuiEnabled = false,
 }: GapGenerationModalProps) {
   if (!selectedGap) return null
 
@@ -404,6 +406,7 @@ export function GapGenerationModal({
                   onSettingsChange={setGapSettings}
                   disabled={isRegenerating}
                   mode={settingsMode}
+                  comfyuiEnabled={comfyuiEnabled}
                 />
               </div>
 

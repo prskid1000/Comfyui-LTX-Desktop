@@ -73,18 +73,8 @@
   },
   "21": {
     "inputs": {
-      "resize_type": "scale to multiple",
-      "resize_type.multiple": 64,
-      "scale_method": "area",
-      "input": ["20", 0]
-    },
-    "class_type": "ResizeImageMaskNode",
-    "_meta": { "title": "Resize Frames" }
-  },
-  "22": {
-    "inputs": {
       "img_compression": 33,
-      "image": ["21", 0]
+      "image": ["20", 0]
     },
     "class_type": "LTXVPreprocess",
     "_meta": { "title": "LTXVPreprocess" }
@@ -95,51 +85,45 @@
       "overlap": 64,
       "temporal_size": 4096,
       "temporal_overlap": 8,
-      "pixels": ["22", 0],
+      "pixels": ["21", 0],
       "vae": ["4", 0]
     },
     "class_type": "VAEEncodeTiled",
-    "_meta": { "title": "VAE Encode (Tiled)" }
+    "_meta": { "title": "VAE Encode Video" }
+  },
+  "26": {
+    "inputs": {
+      "audio": ["20", 2],
+      "audio_vae": ["5", 0]
+    },
+    "class_type": "LTXVAudioVAEEncode",
+    "_meta": { "title": "Audio VAE Encode" }
   },
   "30": {
     "inputs": {
-      "frame_rate": 24,
-      "start_time": 0.5,
-      "video_frames": 4,
-      "end_time": 0.5,
-      "audio_frames": 4,
-      "mode": "pad"
+      "video_fps": 24.0,
+      "video_start_time": 0.5,
+      "video_end_time": 2.5,
+      "audio_start_time": 0.5,
+      "audio_end_time": 2.5,
+      "max_length": "pad",
+      "video_latent": ["25", 0],
+      "audio_latent": ["26", 0]
     },
     "class_type": "LTXVAudioVideoMask",
     "_meta": { "title": "Temporal Inpaint Mask" }
   },
   "31": {
     "inputs": {
-      "samples": ["25", 0],
-      "mask": ["30", 0]
-    },
-    "class_type": "SetLatentNoiseMask",
-    "_meta": { "title": "Set Latent Noise Mask" }
-  },
-  "35": {
-    "inputs": {
-      "audio": ["20", 1],
-      "audio_vae": ["5", 0]
-    },
-    "class_type": "LTXVAudioVAEEncode",
-    "_meta": { "title": "Audio VAE Encode" }
-  },
-  "36": {
-    "inputs": {
-      "video_latent": ["31", 0],
-      "audio_latent": ["35", 0]
+      "video_latent": ["30", 0],
+      "audio_latent": ["30", 1]
     },
     "class_type": "LTXVConcatAVLatent",
     "_meta": { "title": "Concat AV Latent" }
   },
   "40": {
     "inputs": {
-      "frame_rate": 24,
+      "frame_rate": 24.0,
       "positive": ["10", 0],
       "negative": ["11", 0]
     },
@@ -186,7 +170,7 @@
       "guider": ["42", 0],
       "sampler": ["44", 0],
       "sigmas": ["45", 0],
-      "latent_image": ["36", 0]
+      "latent_image": ["31", 0]
     },
     "class_type": "SamplerCustomAdvanced",
     "_meta": { "title": "SamplerCustomAdvanced" }
@@ -208,7 +192,7 @@
       "vae": ["4", 0]
     },
     "class_type": "VAEDecodeTiled",
-    "_meta": { "title": "VAE Decode (Tiled)" }
+    "_meta": { "title": "VAE Decode Video" }
   },
   "57": {
     "inputs": {
@@ -220,7 +204,7 @@
   },
   "60": {
     "inputs": {
-      "fps": 24,
+      "fps": 24.0,
       "images": ["56", 0],
       "audio": ["57", 0]
     },

@@ -82,7 +82,7 @@ export function VideoEditor() {
   } = useProjects()
 
   const { activeLayout: kbLayout, isEditorOpen: isKbEditorOpen, setEditorOpen: setKbEditorOpen } = useKeyboardShortcuts()
-  const { shouldVideoGenerateWithLtxApi, forceApiGenerations } = useAppSettings()
+  const { settings: appSettings, shouldVideoGenerateWithLtxApi, forceApiGenerations } = useAppSettings()
   const kbLayoutRef = useRef(kbLayout)
   kbLayoutRef.current = kbLayout
   const isKbEditorOpenRef = useRef(isKbEditorOpen)
@@ -4152,6 +4152,7 @@ export function VideoEditor() {
           regenerateSuggestion={regenerateSuggestion}
           gapSuggestionError={gapSuggestionError}
           gapSuggestionNoApiKey={gapSuggestionNoApiKey}
+          comfyuiEnabled={appSettings.comfyuiEnabled}
         />
       )}
 
@@ -4170,6 +4171,7 @@ export function VideoEditor() {
         regenReset={regenReset}
         handleI2vGenerate={handleI2vGenerate}
         shouldVideoGenerateWithLtxApi={shouldVideoGenerateWithLtxApi}
+        comfyuiEnabled={appSettings.comfyuiEnabled}
       />
       
       {subtitleTrackStyleIdx !== null && (

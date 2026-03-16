@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 from _routes._errors import HTTPError
 from _services.comfyui_client import ComfyUIClient
+from _services.comfyui_model_manager import check_models, download_missing_models, get_missing_models
 from _services.comfyui_process import get_comfyui_process
 from _services.comfyui_workflows import (
     build_av_workflow,
@@ -211,6 +212,29 @@ class ComfyUIProgressResponse(BaseModel):
     prompt_id: str | None = None
 
 
+class ComfyUIModelStatusItem(BaseModel):
+    filename: str
+    folder_type: str
+    found: bool
+    path: str | None = None
+    size_hint: str
+    description: str
+
+
+class ComfyUIModelsStatusResponse(BaseModel):
+    total: int
+    found: int
+    missing: int
+    models: list[ComfyUIModelStatusItem]
+
+
+class ComfyUIModelsDownloadResponse(BaseModel):
+    status: str
+    downloaded: list[str] = Field(default_factory=list)
+    missing_before: int = 0
+    errors: list[str] = Field(default_factory=list)
+
+
 # ===================================================================
 # Endpoints
 # ===================================================================
@@ -238,6 +262,54 @@ def comfyui_health() -> ComfyUIHealthResponse:
 def comfyui_progress() -> ComfyUIProgressResponse:
     with _state_lock:
         return ComfyUIProgressResponse(**_comfyui_generation_state)
+
+
+@router.get("/models/status", response_model=ComfyUIModelsStatusResponse)
+def comfyui_models_status() -> ComfyUIModelsStatusResponse:
+    """Check which required ComfyUI models are present and which are missing."""
+    url = _get_comfyui_url()
+    statuses = check_models(url)
+    items = [
+        ComfyUIModelStatusItem(
+            filename=s.model.filename,
+            folder_type=s.model.folder_type,
+            found=s.found,
+            path=s.path,
+            size_hint=s.model.size_hint,
+            description=s.model.description,
+        )
+        for s in statuses
+    ]
+    found_count = sum(1 for s in statuses if s.found)
+    return ComfyUIModelsStatusResponse(
+        total=len(statuses),
+        found=found_count,
+        missing=len(statuses) - found_count,
+        models=items,
+    )
+
+
+@router.post("/models/download", response_model=ComfyUIModelsDownloadResponse)
+def comfyui_models_download() -> ComfyUIModelsDownloadResponse:
+    """Download all missing ComfyUI models from HuggingFace."""
+    url = _get_comfyui_url()
+    missing = get_missing_models(url)
+    if not missing:
+        return ComfyUIModelsDownloadResponse(status="complete", missing_before=0)
+
+    errors: list[str] = []
+
+    def on_done(model: Any, path: str | None, error: str | None) -> None:
+        if error:
+            errors.append(f"{model.filename}: {error}")
+
+    downloaded = download_missing_models(url, on_model_done=on_done)
+    return ComfyUIModelsDownloadResponse(
+        status="complete" if not errors else "partial",
+        downloaded=downloaded,
+        missing_before=len(missing),
+        errors=errors,
+    )
 
 
 @router.post("/generate/video", response_model=ComfyUIGenerateResponse)

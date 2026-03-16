@@ -218,40 +218,46 @@ export function SettingsPanel({
         )}
       </Select>
 
-      {/* Audio and Camera Motion Row */}
-      <div className="flex gap-3">
-        <div className="w-[140px] flex-shrink-0">
-          <Select
-            label="Audio"
-            badge="PREVIEW"
-            value={settings.audio ? 'on' : 'off'}
-            onChange={(e) => handleChange('audio', e.target.value === 'on')}
-            disabled={disabled}
-          >
-            <option value="on">On</option>
-            <option value="off">Off</option>
-          </Select>
+      {/* Audio and Camera Motion Row — Camera Motion not available in ComfyUI mode */}
+      {comfyuiEnabled ? (
+        <div className="text-xs text-zinc-500 px-1">
+          Audio is auto-detected from input. Camera motion is not available in ComfyUI mode.
         </div>
+      ) : (
+        <div className="flex gap-3">
+          <div className="w-[140px] flex-shrink-0">
+            <Select
+              label="Audio"
+              badge="PREVIEW"
+              value={settings.audio ? 'on' : 'off'}
+              onChange={(e) => handleChange('audio', e.target.value === 'on')}
+              disabled={disabled}
+            >
+              <option value="on">On</option>
+              <option value="off">Off</option>
+            </Select>
+          </div>
 
-        <div className="flex-1">
-          <Select
-            label="Camera Motion"
-            value={settings.cameraMotion}
-            onChange={(e) => handleChange('cameraMotion', e.target.value)}
-            disabled={disabled}
-          >
-            <option value="none">None</option>
-            <option value="static">Static</option>
-            <option value="focus_shift">Focus Shift</option>
-            <option value="dolly_in">Dolly In</option>
-            <option value="dolly_out">Dolly Out</option>
-            <option value="dolly_left">Dolly Left</option>
-            <option value="dolly_right">Dolly Right</option>
-            <option value="jib_up">Jib Up</option>
-            <option value="jib_down">Jib Down</option>
-          </Select>
+          <div className="flex-1">
+            <Select
+              label="Camera Motion"
+              value={settings.cameraMotion}
+              onChange={(e) => handleChange('cameraMotion', e.target.value)}
+              disabled={disabled}
+            >
+              <option value="none">None</option>
+              <option value="static">Static</option>
+              <option value="focus_shift">Focus Shift</option>
+              <option value="dolly_in">Dolly In</option>
+              <option value="dolly_out">Dolly Out</option>
+              <option value="dolly_left">Dolly Left</option>
+              <option value="dolly_right">Dolly Right</option>
+              <option value="jib_up">Jib Up</option>
+              <option value="jib_down">Jib Down</option>
+            </Select>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

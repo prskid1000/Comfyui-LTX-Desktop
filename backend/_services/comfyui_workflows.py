@@ -31,6 +31,22 @@ def _load(path: Path) -> dict[str, Any]:
         return json.load(f)  # type: ignore[no-any-return]
 
 
+def _ensure_blank_image() -> str:
+    """Create a blank black PNG in ComfyUI's input/ dir for T2V mode.
+
+    Returns the filename (not full path) for use in LoadImage nodes.
+    """
+    comfyui_root = _WORKFLOWS_DIR.parent.parent.parent.parent / "ComfyUI"
+    input_dir = comfyui_root / "input"
+    blank_path = input_dir / "_blank_placeholder.png"
+    if not blank_path.exists():
+        from PIL import Image
+        input_dir.mkdir(parents=True, exist_ok=True)
+        img = Image.new("RGB", (512, 512), (0, 0, 0))
+        img.save(str(blank_path))
+    return "_blank_placeholder.png"
+
+
 # ===================================================================
 # Video generation – uses movie.json (same as AV) with audio disabled
 # ===================================================================
@@ -111,7 +127,7 @@ def build_av_workflow(
     """
     wf = _load(_AV_WORKFLOW)
 
-    if seed is None:
+    if seed is None or seed < 0:
         seed = random.randint(0, 2**32 - 1)
 
     # Prompts
@@ -119,8 +135,11 @@ def build_av_workflow(
     wf["282"]["inputs"]["text"] = negative_prompt
 
     # Guide image — LoadImage (228) must always reference a valid file.
+    # For T2V (no image), create a blank placeholder so the node validates.
     if image_filename:
         wf["228"]["inputs"]["image"] = image_filename
+    else:
+        wf["228"]["inputs"]["image"] = _ensure_blank_image()
     wf["229"]["inputs"]["resize_type.width"] = width
     wf["229"]["inputs"]["resize_type.height"] = height
 
@@ -194,7 +213,7 @@ def build_image_scene_workflow(
     """
     wf = _load(_IMAGE_SCENE_WORKFLOW)
 
-    if seed is None:
+    if seed is None or seed < 0:
         seed = random.randint(0, 2**32 - 1)
 
     # Node 30 is positive CLIPTextEncode -> FluxGuidance -> KSampler positive
@@ -250,7 +269,7 @@ def build_image_character_workflow(
     """
     wf = _load(_IMAGE_CHAR_WORKFLOW)
 
-    if seed is None:
+    if seed is None or seed < 0:
         seed = random.randint(0, 2**32 - 1)
 
     wf["33"]["inputs"]["text"] = prompt
@@ -289,14 +308,14 @@ def build_retake_workflow(
       10  -> CLIPTextEncode (positive prompt)
       11  -> CLIPTextEncode (negative prompt)
       20  -> VHS_LoadVideo (video file, force_rate)
-      30  -> LTXVAudioVideoMask (start_time, end_time, video_frames, audio_frames)
+      30  -> LTXVAudioVideoMask (video_start_time, video_end_time, etc.)
       43  -> RandomNoise (seed)
       70  -> SaveVideo (output prefix)
       80  -> SaveImage (frame output prefix)
     """
     wf = _load(_RETAKE_WORKFLOW)
 
-    if seed is None:
+    if seed is None or seed < 0:
         seed = random.randint(0, 2**32 - 1)
 
     # Prompts
@@ -307,15 +326,15 @@ def build_retake_workflow(
     wf["20"]["inputs"]["video"] = video_filename
     wf["20"]["inputs"]["force_rate"] = fps
 
-    # Temporal mask — start_time/end_time = seconds to keep unchanged
-    wf["30"]["inputs"]["frame_rate"] = fps
-    wf["30"]["inputs"]["start_time"] = start_time
-    wf["30"]["inputs"]["end_time"] = end_time
-    wf["30"]["inputs"]["video_frames"] = video_frames
-    wf["30"]["inputs"]["audio_frames"] = video_frames
+    # Temporal mask — start/end times define the region to regenerate
+    wf["30"]["inputs"]["video_fps"] = float(fps)
+    wf["30"]["inputs"]["video_start_time"] = start_time
+    wf["30"]["inputs"]["video_end_time"] = start_time + end_time
+    wf["30"]["inputs"]["audio_start_time"] = start_time
+    wf["30"]["inputs"]["audio_end_time"] = start_time + end_time
 
     # Conditioning frame rate
-    wf["40"]["inputs"]["frame_rate"] = fps
+    wf["40"]["inputs"]["frame_rate"] = float(fps)
 
     # Seed
     wf["43"]["inputs"]["noise_seed"] = seed

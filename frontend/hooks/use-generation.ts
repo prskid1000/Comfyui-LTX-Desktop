@@ -145,9 +145,9 @@ export function useGeneration(): UseGenerationReturn {
           negative_prompt: '',
           resolution: settings.videoResolution,
           aspect_ratio: settings.aspectRatio || '16:9',
-          duration: String(settings.duration),
-          fps: String(settings.fps),
-          seed: appSettings.seedLocked ? appSettings.lockedSeed : -1,
+          duration: settings.duration,
+          fps: settings.fps,
+          seed: appSettings.seedLocked ? appSettings.lockedSeed : undefined,
           output_prefix: 'ltx_comfyui',
         }
         if (imagePath) {
@@ -452,7 +452,7 @@ export function useGeneration(): UseGenerationReturn {
           width: dims.width,
           height: dims.height,
           steps: numSteps,
-          seed: appSettings.seedLocked ? appSettings.lockedSeed : -1,
+          seed: appSettings.seedLocked ? appSettings.lockedSeed : undefined,
           output_prefix: 'ltx_comfyui_img',
           workflow_type: 'scene',
         }

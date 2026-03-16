@@ -57,7 +57,20 @@ class ComfyUIClient:
             json=payload,
             timeout=SUBMIT_TIMEOUT_SECONDS,
         )
-        resp.raise_for_status()
+        if resp.status_code != 200:
+            # Log the full error from ComfyUI for debugging
+            try:
+                err_data = resp.json()
+                node_errors = err_data.get("node_errors", {})
+                if node_errors:
+                    for nid, nerr in node_errors.items():
+                        ct = nerr.get("class_type", "?")
+                        for e in nerr.get("errors", []):
+                            logger.error("ComfyUI node %s (%s): %s - %s",
+                                         nid, ct, e.get("message", ""), e.get("details", ""))
+            except Exception:
+                pass
+            resp.raise_for_status()
         prompt_id: str = resp.json()["prompt_id"]
         return prompt_id
 
