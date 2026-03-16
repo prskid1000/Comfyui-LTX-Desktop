@@ -82,6 +82,8 @@ function getPhaseMessage(phase: string): string {
       return 'Downloading output...'
     case 'decoding':
       return 'Decoding video...'
+    case 'starting_comfyui':
+      return 'Starting ComfyUI...'
     case 'complete':
       return 'Complete!'
     default:
@@ -134,115 +136,208 @@ export function useGeneration(): UseGenerationReturn {
     let shouldApplyPollingUpdates = true
 
     try {
-      // Prepare JSON body
-      const body: Record<string, unknown> = {
-        prompt,
-        model: settings.model,
-        duration: String(settings.duration),
-        resolution: settings.videoResolution,
-        fps: String(settings.fps),
-        audio: String(settings.audio),
-        cameraMotion: settings.cameraMotion,
-        aspectRatio: settings.aspectRatio || '16:9',
-      }
-      if (imagePath) {
-        body.imagePath = imagePath
-      }
-      if (audioPath) {
-        body.audioPath = audioPath
-      }
+      const useComfyui = appSettings.comfyuiEnabled
 
-      // Poll for real progress from backend with time-based interpolation
-      let lastPhase = ''
-      let inferenceStartTime = 0
-      // Estimated inference time in seconds based on model
-      const estimatedInferenceTime = settings.model === 'pro' ? 120 : 45
-      
-      const pollProgress = async () => {
-        if (!shouldApplyPollingUpdates) return
-        try {
-          const res = await backendFetch('/api/generation/progress')
-          if (res.ok) {
-            const data: GenerationProgress = await res.json()
-            if (!shouldApplyPollingUpdates) return
-
-            let displayProgress = data.progress
-            let statusMessage = getPhaseMessage(data.phase)
-            
-            // Time-based interpolation during inference phase
-            if (data.phase === 'inference') {
-              if (lastPhase !== 'inference') {
-                inferenceStartTime = Date.now()
-              }
-              const elapsed = (Date.now() - inferenceStartTime) / 1000
-              // Interpolate from 15% to 95% based on estimated time
-              const inferenceProgress = Math.min(elapsed / estimatedInferenceTime, 0.95)
-              displayProgress = 15 + Math.floor(inferenceProgress * 80)
-            }
-
-            // Keep API/local completion as a terminal response state, not polling state.
-            // Polling complete means backend state is finalized, but request can still be in-flight.
-            if (data.phase === 'complete' || data.status === 'complete') {
-              displayProgress = 95
-              statusMessage = 'Finalizing...'
-            }
-            
-            lastPhase = data.phase
-            
-            setState(prev => ({
-              ...prev,
-              progress: displayProgress,
-              statusMessage,
-            }))
-          }
-        } catch {
-          // Ignore polling errors
+      if (useComfyui) {
+        // ComfyUI proxy path
+        const comfyBody: Record<string, unknown> = {
+          prompt,
+          negative_prompt: '',
+          resolution: settings.videoResolution,
+          aspect_ratio: settings.aspectRatio || '16:9',
+          duration: String(settings.duration),
+          fps: String(settings.fps),
+          seed: appSettings.seedLocked ? appSettings.lockedSeed : -1,
+          output_prefix: 'ltx_comfyui',
         }
-      }
-      
-      progressInterval = setInterval(pollProgress, 500)
+        if (imagePath) {
+          comfyBody.image_path = imagePath
+        }
 
-      // Start generation (HTTP POST - synchronous, returns when done)
-      const response = await backendFetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: abortControllerRef.current.signal,
-      })
-      shouldApplyPollingUpdates = false
+        const comfyEndpoint = audioPath
+          ? '/api/comfyui/generate/av'
+          : '/api/comfyui/generate/video'
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(errorText || 'Generation failed')
-      }
+        if (audioPath) {
+          comfyBody.audio_path = audioPath
+        }
 
-      const result = await response.json()
-      
-      if (result.status === 'complete' && result.video_path) {
-        // Convert Windows path to proper file:// URL
-        const videoPathNormalized = result.video_path.replace(/\\/g, '/')
-        const fileUrl = videoPathNormalized.startsWith('/') ? `file://${videoPathNormalized}` : `file:///${videoPathNormalized}`
-        
-        setState({
-          isGenerating: false,
-          progress: 100,
-          statusMessage: 'Complete!',
-          videoUrl: fileUrl,
-          videoPath: result.video_path,  // Keep original path for API calls
-          imageUrl: null,
-          imagePath: null,
-          imageUrls: [],
-          imagePaths: [],
-          error: null,
+        // Poll ComfyUI progress
+        const pollProgress = async () => {
+          if (!shouldApplyPollingUpdates) return
+          try {
+            const res = await backendFetch('/api/comfyui/progress')
+            if (res.ok) {
+              const data = await res.json()
+              if (!shouldApplyPollingUpdates) return
+
+              let displayProgress = data.progress ?? 0
+              const statusMessage = getPhaseMessage(data.phase ?? 'inference')
+
+              if (data.phase === 'complete' || data.status === 'complete') {
+                displayProgress = 95
+              }
+
+              setState(prev => ({
+                ...prev,
+                progress: displayProgress,
+                statusMessage,
+              }))
+            }
+          } catch {
+            // Ignore polling errors
+          }
+        }
+
+        progressInterval = setInterval(pollProgress, 500)
+
+        const response = await backendFetch(comfyEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(comfyBody),
+          signal: abortControllerRef.current.signal,
         })
-      } else if (result.status === 'cancelled') {
-        setState(prev => ({
-          ...prev,
-          isGenerating: false,
-          statusMessage: 'Cancelled',
-        }))
-      } else if (result.error) {
-        throw new Error(result.error)
+        shouldApplyPollingUpdates = false
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(errorText || 'ComfyUI generation failed')
+        }
+
+        const result = await response.json()
+
+        if (result.status === 'complete' && result.output_paths && result.output_paths.length > 0) {
+          const rawPath = result.output_paths[0] as string
+          const videoPathNormalized = rawPath.replace(/\\/g, '/')
+          const fileUrl = videoPathNormalized.startsWith('/') ? `file://${videoPathNormalized}` : `file:///${videoPathNormalized}`
+
+          setState({
+            isGenerating: false,
+            progress: 100,
+            statusMessage: 'Complete!',
+            videoUrl: fileUrl,
+            videoPath: rawPath,
+            imageUrl: null,
+            imagePath: null,
+            imageUrls: [],
+            imagePaths: [],
+            error: null,
+          })
+        } else if (result.error) {
+          throw new Error(result.error)
+        }
+      } else {
+        // Native generation path
+        // Prepare JSON body
+        const body: Record<string, unknown> = {
+          prompt,
+          model: settings.model,
+          duration: String(settings.duration),
+          resolution: settings.videoResolution,
+          fps: String(settings.fps),
+          audio: String(settings.audio),
+          cameraMotion: settings.cameraMotion,
+          aspectRatio: settings.aspectRatio || '16:9',
+        }
+        if (imagePath) {
+          body.imagePath = imagePath
+        }
+        if (audioPath) {
+          body.audioPath = audioPath
+        }
+
+        // Poll for real progress from backend with time-based interpolation
+        let lastPhase = ''
+        let inferenceStartTime = 0
+        // Estimated inference time in seconds based on model
+        const estimatedInferenceTime = settings.model === 'pro' ? 120 : 45
+
+        const pollProgress = async () => {
+          if (!shouldApplyPollingUpdates) return
+          try {
+            const res = await backendFetch('/api/generation/progress')
+            if (res.ok) {
+              const data: GenerationProgress = await res.json()
+              if (!shouldApplyPollingUpdates) return
+
+              let displayProgress = data.progress
+              let statusMessage = getPhaseMessage(data.phase)
+
+              // Time-based interpolation during inference phase
+              if (data.phase === 'inference') {
+                if (lastPhase !== 'inference') {
+                  inferenceStartTime = Date.now()
+                }
+                const elapsed = (Date.now() - inferenceStartTime) / 1000
+                // Interpolate from 15% to 95% based on estimated time
+                const inferenceProgress = Math.min(elapsed / estimatedInferenceTime, 0.95)
+                displayProgress = 15 + Math.floor(inferenceProgress * 80)
+              }
+
+              // Keep API/local completion as a terminal response state, not polling state.
+              // Polling complete means backend state is finalized, but request can still be in-flight.
+              if (data.phase === 'complete' || data.status === 'complete') {
+                displayProgress = 95
+                statusMessage = 'Finalizing...'
+              }
+
+              lastPhase = data.phase
+
+              setState(prev => ({
+                ...prev,
+                progress: displayProgress,
+                statusMessage,
+              }))
+            }
+          } catch {
+            // Ignore polling errors
+          }
+        }
+
+        progressInterval = setInterval(pollProgress, 500)
+
+        // Start generation (HTTP POST - synchronous, returns when done)
+        const response = await backendFetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: abortControllerRef.current.signal,
+        })
+        shouldApplyPollingUpdates = false
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(errorText || 'Generation failed')
+        }
+
+        const result = await response.json()
+
+        if (result.status === 'complete' && result.video_path) {
+          // Convert Windows path to proper file:// URL
+          const videoPathNormalized = result.video_path.replace(/\\/g, '/')
+          const fileUrl = videoPathNormalized.startsWith('/') ? `file://${videoPathNormalized}` : `file:///${videoPathNormalized}`
+
+          setState({
+            isGenerating: false,
+            progress: 100,
+            statusMessage: 'Complete!',
+            videoUrl: fileUrl,
+            videoPath: result.video_path,  // Keep original path for API calls
+            imageUrl: null,
+            imagePath: null,
+            imageUrls: [],
+            imagePaths: [],
+            error: null,
+          })
+        } else if (result.status === 'cancelled') {
+          setState(prev => ({
+            ...prev,
+            isGenerating: false,
+            statusMessage: 'Cancelled',
+          }))
+        } else if (result.error) {
+          throw new Error(result.error)
+        }
       }
 
     } catch (error) {
@@ -265,25 +360,27 @@ export function useGeneration(): UseGenerationReturn {
         clearInterval(progressInterval)
       }
     }
-  }, [])
+  }, [appSettings.comfyuiEnabled, appSettings.seedLocked, appSettings.lockedSeed])
 
   const cancel = useCallback(async () => {
     // Abort the fetch request
     abortControllerRef.current?.abort()
-    
-    // Also tell the backend to cancel
-    try {
-      await backendFetch('/api/generate/cancel', { method: 'POST' })
-    } catch {
-      // Ignore errors from cancel request
+
+    // Also tell the backend to cancel (skip for ComfyUI — no cancel endpoint yet)
+    if (!appSettings.comfyuiEnabled) {
+      try {
+        await backendFetch('/api/generate/cancel', { method: 'POST' })
+      } catch {
+        // Ignore errors from cancel request
+      }
     }
-    
+
     setState(prev => ({
       ...prev,
       isGenerating: false,
       statusMessage: 'Cancelled',
     }))
-  }, [])
+  }, [appSettings.comfyuiEnabled])
 
   const generateImage = useCallback(async (
     prompt: string,
@@ -340,100 +437,174 @@ export function useGeneration(): UseGenerationReturn {
     abortControllerRef.current = new AbortController()
 
     try {
+      const useComfyui = appSettings.comfyuiEnabled
+
       // Skip prompt enhancement for T2I - use original prompt directly
       const finalPrompt = prompt
 
       const dims = getImageDimensions(settings)
       const numSteps = settings.imageSteps || 4
 
-      // Poll for progress
-      const pollProgress = async () => {
-        try {
-          const res = await backendFetch('/api/generation/progress')
-          if (res.ok) {
-            const data = await res.json()
-            const currentImage = data.currentStep || 0
-            const totalImages = data.totalSteps || numImages
-            setState(prev => ({
-              ...prev,
-              progress: data.progress,
-              statusMessage: data.phase === 'loading_model' 
-                ? 'Loading Z-Image Turbo model...' 
-                : data.phase === 'inference'
-                  ? numImages > 1 
-                    ? `Generating image ${currentImage + 1}/${totalImages}...`
-                    : 'Generating image...'
-                  : data.phase === 'complete'
-                    ? 'Complete!'
-                    : 'Generating...',
-            }))
-          }
-        } catch {
-          // Ignore polling errors
-        }
-      }
-      
-      const progressInterval = setInterval(pollProgress, 500)
-
-      const response = await backendFetch('/api/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      if (useComfyui) {
+        // ComfyUI proxy path for image generation
+        const comfyBody = {
           prompt: finalPrompt,
           width: dims.width,
           height: dims.height,
-          numSteps,
-          numImages,
-        }),
-        signal: abortControllerRef.current.signal,
-      })
-
-      clearInterval(progressInterval)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(errorText || 'Image generation failed')
-      }
-
-      const result = await response.json()
-      
-      if (result.status === 'complete') {
-        // Handle both new format (image_paths array) and old format (single image_path)
-        let rawPaths: string[] = []
-        if (result.image_paths && Array.isArray(result.image_paths)) {
-          rawPaths = result.image_paths
-        } else if (result.image_path) {
-          rawPaths = [result.image_path]
+          steps: numSteps,
+          seed: appSettings.seedLocked ? appSettings.lockedSeed : -1,
+          output_prefix: 'ltx_comfyui_img',
+          workflow_type: 'scene',
         }
-        
-        if (rawPaths.length > 0) {
-          // Convert all paths to file URLs
+
+        // Poll ComfyUI progress
+        const pollProgress = async () => {
+          try {
+            const res = await backendFetch('/api/comfyui/progress')
+            if (res.ok) {
+              const data = await res.json()
+              setState(prev => ({
+                ...prev,
+                progress: data.progress ?? 0,
+                statusMessage: data.phase === 'complete' ? 'Complete!' : 'Generating image...',
+              }))
+            }
+          } catch {
+            // Ignore polling errors
+          }
+        }
+
+        const progressInterval = setInterval(pollProgress, 500)
+
+        const response = await backendFetch('/api/comfyui/generate/image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(comfyBody),
+          signal: abortControllerRef.current.signal,
+        })
+
+        clearInterval(progressInterval)
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(errorText || 'ComfyUI image generation failed')
+        }
+
+        const result = await response.json()
+
+        if (result.status === 'complete' && result.output_paths && result.output_paths.length > 0) {
+          const rawPaths: string[] = result.output_paths
           const fileUrls = rawPaths.map((path: string) => {
-            const imagePath = path.replace(/\\/g, '/')
-            return imagePath.startsWith('/') ? `file://${imagePath}` : `file:///${imagePath}`
+            const normalized = path.replace(/\\/g, '/')
+            return normalized.startsWith('/') ? `file://${normalized}` : `file:///${normalized}`
           })
-          
+
           setState({
             isGenerating: false,
             progress: 100,
             statusMessage: 'Complete!',
             videoUrl: null,
             videoPath: null,
-            imageUrl: fileUrls[0],  // First image for backwards compatibility
-            imagePath: rawPaths[0],  // First image path
-            imageUrls: fileUrls,    // All images
-            imagePaths: rawPaths,   // All image paths
+            imageUrl: fileUrls[0],
+            imagePath: rawPaths[0],
+            imageUrls: fileUrls,
+            imagePaths: rawPaths,
             error: null,
           })
+        } else if (result.error) {
+          throw new Error(result.error)
         }
-      } else if (result.status === 'cancelled') {
-        setState(prev => ({
-          ...prev,
-          isGenerating: false,
-          statusMessage: 'Cancelled',
-        }))
-      } else if (result.error) {
-        throw new Error(result.error)
+      } else {
+        // Native generation path
+        // Poll for progress
+        const pollProgress = async () => {
+          try {
+            const res = await backendFetch('/api/generation/progress')
+            if (res.ok) {
+              const data = await res.json()
+              const currentImage = data.currentStep || 0
+              const totalImages = data.totalSteps || numImages
+              setState(prev => ({
+                ...prev,
+                progress: data.progress,
+                statusMessage: data.phase === 'loading_model'
+                  ? 'Loading Z-Image Turbo model...'
+                  : data.phase === 'inference'
+                    ? numImages > 1
+                      ? `Generating image ${currentImage + 1}/${totalImages}...`
+                      : 'Generating image...'
+                    : data.phase === 'complete'
+                      ? 'Complete!'
+                      : 'Generating...',
+              }))
+            }
+          } catch {
+            // Ignore polling errors
+          }
+        }
+
+        const progressInterval = setInterval(pollProgress, 500)
+
+        const response = await backendFetch('/api/generate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: finalPrompt,
+            width: dims.width,
+            height: dims.height,
+            numSteps,
+            numImages,
+          }),
+          signal: abortControllerRef.current.signal,
+        })
+
+        clearInterval(progressInterval)
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(errorText || 'Image generation failed')
+        }
+
+        const result = await response.json()
+
+        if (result.status === 'complete') {
+          // Handle both new format (image_paths array) and old format (single image_path)
+          let rawPaths: string[] = []
+          if (result.image_paths && Array.isArray(result.image_paths)) {
+            rawPaths = result.image_paths
+          } else if (result.image_path) {
+            rawPaths = [result.image_path]
+          }
+
+          if (rawPaths.length > 0) {
+            // Convert all paths to file URLs
+            const fileUrls = rawPaths.map((path: string) => {
+              const imagePath = path.replace(/\\/g, '/')
+              return imagePath.startsWith('/') ? `file://${imagePath}` : `file:///${imagePath}`
+            })
+
+            setState({
+              isGenerating: false,
+              progress: 100,
+              statusMessage: 'Complete!',
+              videoUrl: null,
+              videoPath: null,
+              imageUrl: fileUrls[0],  // First image for backwards compatibility
+              imagePath: rawPaths[0],  // First image path
+              imageUrls: fileUrls,    // All images
+              imagePaths: rawPaths,   // All image paths
+              error: null,
+            })
+          }
+        } else if (result.status === 'cancelled') {
+          setState(prev => ({
+            ...prev,
+            isGenerating: false,
+            statusMessage: 'Cancelled',
+          }))
+        } else if (result.error) {
+          throw new Error(result.error)
+        }
       }
 
     } catch (error) {
@@ -451,7 +622,7 @@ export function useGeneration(): UseGenerationReturn {
         }))
       }
     }
-  }, [appSettings.hasFalApiKey, forceApiGenerations, refreshSettings])
+  }, [appSettings.hasFalApiKey, appSettings.comfyuiEnabled, appSettings.seedLocked, appSettings.lockedSeed, forceApiGenerations, refreshSettings])
 
   const reset = useCallback(() => {
     setState({

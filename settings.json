@@ -12,5 +12,7 @@
     "steps": 20,
     "use_upscaler": true
   },
-  "prompt_cache_size": 100
+  "prompt_cache_size": 100,
+  "comfyui_enabled": false,
+  "comfyui_url": "http://127.0.0.1:8188"
 }

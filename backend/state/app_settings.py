@@ -75,6 +75,8 @@ class AppSettings(SettingsBaseModel):
     seed_locked: bool = False
     locked_seed: int = 42
     models_dir: str = ""
+    comfyui_enabled: bool = False
+    comfyui_url: str = "http://127.0.0.1:8188"
 
     @field_validator("prompt_cache_size", mode="before")
     @classmethod
@@ -147,6 +149,8 @@ class SettingsResponse(SettingsBaseModel):
     seed_locked: bool = False
     locked_seed: int = 42
     models_dir: str = ""
+    comfyui_enabled: bool = False
+    comfyui_url: str = "http://127.0.0.1:8188"
 
 
 def to_settings_response(settings: AppSettings) -> SettingsResponse:

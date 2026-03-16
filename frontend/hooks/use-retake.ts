@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { backendFetch } from '../lib/backend'
+import { useAppSettings } from '../contexts/AppSettingsContext'
 import { logger } from '../lib/logger'
 
 export type RetakeMode = 'replace_audio_and_video' | 'replace_video' | 'replace_audio'
@@ -25,6 +26,7 @@ interface UseRetakeState {
 }
 
 export function useRetake() {
+  const { settings: appSettings } = useAppSettings()
   const [state, setState] = useState<UseRetakeState>({
     isRetaking: false,
     retakeStatus: '',
@@ -43,22 +45,40 @@ export function useRetake() {
     })
 
     try {
-      const response = await backendFetch('/api/retake', {
+      const useComfyui = appSettings.comfyuiEnabled
+
+      const endpoint = useComfyui ? '/api/comfyui/retake' : '/api/retake'
+      const body = useComfyui
+        ? {
+            video_path: params.videoPath,
+            start_time: params.startTime,
+            duration: params.duration,
+            prompt: params.prompt,
+            mode: params.mode,
+          }
+        : {
+            video_path: params.videoPath,
+            start_time: params.startTime,
+            duration: params.duration,
+            prompt: params.prompt,
+            mode: params.mode,
+          }
+
+      const response = await backendFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          video_path: params.videoPath,
-          start_time: params.startTime,
-          duration: params.duration,
-          prompt: params.prompt,
-          mode: params.mode,
-        }),
+        body: JSON.stringify(body),
       })
 
       const data = await response.json()
 
-      if (response.ok && data.status === 'complete' && data.video_path) {
-        const pathNormalized = data.video_path.replace(/\\/g, '/')
+      // ComfyUI returns output_paths, native returns video_path
+      const videoPath = useComfyui
+        ? (data.output_paths?.[0] as string | undefined)
+        : (data.video_path as string | undefined)
+
+      if (response.ok && data.status === 'complete' && videoPath) {
+        const pathNormalized = videoPath.replace(/\\/g, '/')
         const videoUrl = pathNormalized.startsWith('/') ? `file://${pathNormalized}` : `file:///${pathNormalized}`
 
         setState({
@@ -66,7 +86,7 @@ export function useRetake() {
           retakeStatus: 'Retake complete!',
           retakeError: null,
           result: {
-            videoPath: data.video_path,
+            videoPath,
             videoUrl,
           },
         })
@@ -91,7 +111,7 @@ export function useRetake() {
         result: null,
       })
     }
-  }, [])
+  }, [appSettings.comfyuiEnabled])
 
   const resetRetake = useCallback(() => {
     setState({

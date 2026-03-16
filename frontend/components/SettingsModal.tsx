@@ -400,6 +400,62 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                 </div>
               )}
 
+              {/* ComfyUI Proxy Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Sliders className="h-4 w-4 text-blue-400" />
+                  <h3 className="text-sm font-semibold text-white">ComfyUI Generation</h3>
+                </div>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Route generation through a local ComfyUI instance using custom workflows (Flux for images, LTX-2 for video).
+                </p>
+
+                <div
+                  className={`bg-zinc-800/50 rounded-lg p-4 border-2 transition-colors cursor-pointer ${
+                    settings.comfyuiEnabled ? 'border-blue-500' : 'border-transparent hover:border-zinc-600'
+                  }`}
+                  onClick={() => {
+                    onSettingsChange({
+                      ...settings,
+                      comfyuiEnabled: !settings.comfyuiEnabled,
+                    })
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-purple-400" />
+                        <span className="text-sm font-medium text-white">Enable ComfyUI Proxy</span>
+                      </div>
+                      <p className="text-xs text-zinc-400 mt-1">
+                        Use ComfyUI workflows for video and image generation instead of built-in pipelines.
+                      </p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      settings.comfyuiEnabled ? 'border-blue-500 bg-blue-500' : 'border-zinc-600'
+                    }`}>
+                      {settings.comfyuiEnabled && <Check className="h-3 w-3 text-white" />}
+                    </div>
+                  </div>
+                </div>
+
+                {settings.comfyuiEnabled && (
+                  <div className="space-y-2">
+                    <label className="text-xs text-zinc-400">ComfyUI URL</label>
+                    <input
+                      type="text"
+                      value={settings.comfyuiUrl}
+                      onChange={(e) => onSettingsChange({ ...settings, comfyuiUrl: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm focus:outline-none focus:border-blue-500"
+                      placeholder="http://127.0.0.1:8188"
+                    />
+                    <p className="text-xs text-zinc-600">
+                      The URL of your running ComfyUI instance. Default: http://127.0.0.1:8188
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* Text Encoding Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">

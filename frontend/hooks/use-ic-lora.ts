@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { backendFetch } from '../lib/backend'
+import { useAppSettings } from '../contexts/AppSettingsContext'
 import { logger } from '../lib/logger'
 
 export type IcLoraConditioningType = 'canny' | 'depth' | 'pose'
@@ -24,6 +25,7 @@ interface UseIcLoraState {
 }
 
 export function useIcLora() {
+  const { settings: appSettings } = useAppSettings()
   const [state, setState] = useState<UseIcLoraState>({
     isGenerating: false,
     status: '',
@@ -42,27 +44,45 @@ export function useIcLora() {
     })
 
     try {
-      const response = await backendFetch('/api/ic-lora/generate', {
+      const useComfyui = appSettings.comfyuiEnabled
+
+      const endpoint = useComfyui ? '/api/comfyui/ic-lora/generate' : '/api/ic-lora/generate'
+      const body = useComfyui
+        ? {
+            video_path: params.videoPath,
+            conditioning_type: params.conditioningType,
+            conditioning_strength: params.conditioningStrength,
+            prompt: params.prompt,
+          }
+        : {
+            video_path: params.videoPath,
+            conditioning_type: params.conditioningType,
+            conditioning_strength: params.conditioningStrength,
+            prompt: params.prompt,
+          }
+
+      const response = await backendFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          video_path: params.videoPath,
-          conditioning_type: params.conditioningType,
-          conditioning_strength: params.conditioningStrength,
-          prompt: params.prompt,
-        }),
+        body: JSON.stringify(body),
       })
 
       const data = await response.json()
-      if (response.ok && data.status === 'complete' && data.video_path) {
-        const pathNormalized = data.video_path.replace(/\\/g, '/')
+
+      // ComfyUI returns output_paths, native returns video_path
+      const videoPath = useComfyui
+        ? (data.output_paths?.[0] as string | undefined)
+        : (data.video_path as string | undefined)
+
+      if (response.ok && data.status === 'complete' && videoPath) {
+        const pathNormalized = videoPath.replace(/\\/g, '/')
         const videoUrl = pathNormalized.startsWith('/') ? `file://${pathNormalized}` : `file:///${pathNormalized}`
         setState({
           isGenerating: false,
           status: 'Generation complete!',
           error: null,
           result: {
-            videoPath: data.video_path,
+            videoPath,
             videoUrl,
           },
         })
@@ -87,7 +107,7 @@ export function useIcLora() {
         result: null,
       })
     }
-  }, [])
+  }, [appSettings.comfyuiEnabled])
 
   const reset = useCallback(() => {
     setState({

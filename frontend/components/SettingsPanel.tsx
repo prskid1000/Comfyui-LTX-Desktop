@@ -29,6 +29,13 @@ interface SettingsPanelProps {
   mode?: GenerationMode
   forceApiGenerations?: boolean
   hasAudio?: boolean
+  comfyuiEnabled?: boolean
+}
+
+const COMFYUI_RESOLUTIONS = ['1080p', '720p', '576p', '540p', '480p', '360p']
+const COMFYUI_MAX_DURATION: Record<string, number> = {
+  '1080p': 5, '720p': 8, '576p': 10, '540p': 10,
+  '480p': 10, '360p': 10,
 }
 
 export function SettingsPanel({
@@ -38,20 +45,22 @@ export function SettingsPanel({
   mode = 'text-to-video',
   forceApiGenerations = false,
   hasAudio = false,
+  comfyuiEnabled = false,
 }: SettingsPanelProps) {
   const isImageMode = mode === 'text-to-image'
   const LOCAL_MAX_DURATION: Record<string, number> = { '540p': 20, '720p': 10, '1080p': 5 }
 
   const handleChange = (key: keyof GenerationSettings, value: string | number | boolean) => {
     const nextSettings = { ...settings, [key]: value } as GenerationSettings
-    if (forceApiGenerations && !isImageMode) {
+    if (forceApiGenerations && !isImageMode && !comfyuiEnabled) {
       onSettingsChange(sanitizeForcedApiVideoSettings(nextSettings, { hasAudio }))
       return
     }
 
-    // Clamp duration when resolution changes for local generation
-    if (key === 'videoResolution' && !forceApiGenerations) {
-      const maxDur = LOCAL_MAX_DURATION[value as string] ?? 20
+    // Clamp duration when resolution changes
+    if (key === 'videoResolution') {
+      const maxDurMap = comfyuiEnabled ? COMFYUI_MAX_DURATION : LOCAL_MAX_DURATION
+      const maxDur = maxDurMap[value as string] ?? 10
       if (nextSettings.duration > maxDur) {
         nextSettings.duration = maxDur
       }
@@ -60,14 +69,26 @@ export function SettingsPanel({
     onSettingsChange(nextSettings)
   }
 
-  const localMaxDuration = LOCAL_MAX_DURATION[settings.videoResolution] ?? 20
-  const durationOptions = forceApiGenerations
-    ? [...getAllowedForcedApiDurations(settings.model, settings.videoResolution, settings.fps)]
-    : [5, 6, 8, 10, 20].filter(d => d <= localMaxDuration)
-  const resolutionOptions = forceApiGenerations
-    ? (hasAudio ? ['1080p'] : [...FORCED_API_VIDEO_RESOLUTIONS])
-    : ['1080p', '720p', '540p']
-  const fpsOptions = forceApiGenerations ? [...FORCED_API_VIDEO_FPS] : [24, 25, 50]
+  // ComfyUI mode: custom resolution/duration/fps options
+  const effectiveMaxDuration = comfyuiEnabled
+    ? (COMFYUI_MAX_DURATION[settings.videoResolution] ?? 10)
+    : (LOCAL_MAX_DURATION[settings.videoResolution] ?? 20)
+
+  const durationOptions = comfyuiEnabled
+    ? [1, 2, 3, 4, 5, 6, 8, 10].filter(d => d <= effectiveMaxDuration)
+    : forceApiGenerations
+      ? [...getAllowedForcedApiDurations(settings.model, settings.videoResolution, settings.fps)]
+      : [5, 6, 8, 10, 20].filter(d => d <= effectiveMaxDuration)
+
+  const resolutionOptions = comfyuiEnabled
+    ? COMFYUI_RESOLUTIONS
+    : forceApiGenerations
+      ? (hasAudio ? ['1080p'] : [...FORCED_API_VIDEO_RESOLUTIONS])
+      : ['1080p', '720p', '540p']
+
+  const fpsOptions = comfyuiEnabled
+    ? [24, 25]
+    : forceApiGenerations ? [...FORCED_API_VIDEO_FPS] : [24, 25, 50]
 
   // Image mode settings
   if (isImageMode) {
@@ -108,7 +129,16 @@ export function SettingsPanel({
   return (
     <div className="space-y-4">
       {/* Model Selection */}
-      {!forceApiGenerations ? (
+      {comfyuiEnabled ? (
+        <Select
+          label="Model"
+          value="fast"
+          onChange={() => {}}
+          disabled={disabled}
+        >
+          <option value="fast">LTX-2 19B (ComfyUI)</option>
+        </Select>
+      ) : !forceApiGenerations ? (
         <Select
           label="Model"
           value={settings.model}
