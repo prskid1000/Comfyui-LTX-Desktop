@@ -78,7 +78,7 @@ class ComfyUIClient:
         self,
         prompt_id: str,
         *,
-        timeout: float = 600,
+        timeout: float = 1800,
         poll_interval: float = POLL_INTERVAL_SECONDS,
         on_progress: Any | None = None,  # noqa: ARG002
     ) -> dict[str, Any]:

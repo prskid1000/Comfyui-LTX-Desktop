@@ -266,9 +266,11 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
 
   const tabs = [
     { id: 'general' as TabId, label: 'General', icon: Settings },
-    { id: 'apiKeys' as TabId, label: 'API Keys', icon: KeyRound },
-    { id: 'inference' as TabId, label: 'Inference', icon: Sliders },
-    { id: 'promptEnhancer' as TabId, label: 'Prompt Enhancer', icon: Sparkles },
+    ...(!settings.comfyuiEnabled ? [
+      { id: 'apiKeys' as TabId, label: 'API Keys', icon: KeyRound },
+      { id: 'inference' as TabId, label: 'Inference', icon: Sliders },
+      { id: 'promptEnhancer' as TabId, label: 'Prompt Enhancer', icon: Sparkles },
+    ] : []),
     { id: 'about' as TabId, label: 'About', icon: Info },
   ]
 
@@ -351,7 +353,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                 </div>
               </div>
 
-              {!forceApiGenerations && (
+              {!forceApiGenerations && !settings.comfyuiEnabled && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Film className="h-4 w-4 text-blue-400" />
@@ -456,7 +458,8 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                 )}
               </div>
 
-              {/* Text Encoding Section */}
+              {/* Text Encoding Section — hidden when ComfyUI uses its own encoders */}
+              {!settings.comfyuiEnabled && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <svg className="h-4 w-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -596,7 +599,11 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   )}
                 </div>
               </div>
+              )}
 
+              {/* Load on Startup, Torch Compile — hidden when ComfyUI manages its own runtime */}
+              {!settings.comfyuiEnabled && (
+              <>
               {/* Load on Startup Setting */}
               <div className="space-y-3 pt-4 border-t border-zinc-800">
                 <div className="flex items-start justify-between gap-4">
@@ -691,8 +698,12 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   {settings.useTorchCompile ? 'Optimized inference (recommended)' : 'Standard inference'}
                 </div>
               </div>
+              </>
+              )}
 
-              {/* Seed Lock Setting */}
+              {/* Seed Lock + Analytics — hidden when ComfyUI is on */}
+              {!settings.comfyuiEnabled && (
+              <>
               <div className="space-y-3 pt-4 border-t border-zinc-800">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -800,6 +811,8 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                 </div>
 
               </div>
+              </>
+              )}
             </>
           )}
 

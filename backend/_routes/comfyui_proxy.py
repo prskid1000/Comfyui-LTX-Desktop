@@ -190,7 +190,7 @@ class ComfyUIRawWorkflowRequest(BaseModel):
     """Submit a raw ComfyUI workflow JSON directly."""
     workflow: dict[str, Any]
     output_prefix: str = "ltxd_raw"
-    timeout: float = 600
+    timeout: float = 1800
 
 
 class ComfyUIGenerateResponse(BaseModel):
@@ -543,7 +543,7 @@ def _execute_workflow(
     workflow: dict[str, Any],
     output_prefix: str,
     extensions: tuple[str, ...],
-    timeout: float = 600,
+    timeout: float = 1800,
 ) -> ComfyUIGenerateResponse:
     """Queue a workflow, wait for completion, collect outputs."""
     before_time = time.time()
