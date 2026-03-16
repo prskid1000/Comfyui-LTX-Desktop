@@ -157,6 +157,7 @@ def build_av_workflow(
     wf["279:270"]["inputs"]["value"] = fps
     wf["279:277"]["inputs"]["value"] = frame_count
     wf["279:303"]["inputs"]["a"] = frame_count
+    wf["279:304"]["inputs"]["b"] = fps  # Duration = frames / fps
 
     # Seeds
     wf["279:240"]["inputs"]["noise_seed"] = seed

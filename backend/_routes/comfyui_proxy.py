@@ -322,6 +322,8 @@ def comfyui_generate_video(req: ComfyUIVideoRequest) -> ComfyUIGenerateResponse:
 
     w, h = resolve_resolution(req.resolution, req.aspect_ratio)
     frames = compute_frame_count(req.duration, req.fps)
+    logger.info("ComfyUI video: duration=%s fps=%s -> %dx%d %d frames",
+                req.duration, req.fps, w, h, frames)
 
     # Copy input image to ComfyUI if provided
     image_filename: str | None = None
