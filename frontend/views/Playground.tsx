@@ -48,12 +48,12 @@ export function Playground() {
   const { status, processStatus } = useBackend()
 
   useEffect(() => {
-    if (!shouldVideoGenerateWithLtxApi || mode === 'text-to-image') return
+    if (!shouldVideoGenerateWithLtxApi || mode === 'text-to-image' || appSettings.comfyuiEnabled) return
     setSettings((prev) => sanitizeForcedApiVideoSettings({ ...prev, model: 'fast' }))
   }, [mode, shouldVideoGenerateWithLtxApi])
 
   useEffect(() => {
-    if (forceApiGenerations && mode === 'ic-lora') {
+    if (forceApiGenerations && !appSettings.comfyuiEnabled && mode === 'ic-lora') {
       setMode('text-to-video')
     }
   }, [forceApiGenerations, mode])
@@ -62,7 +62,7 @@ export function Playground() {
   useEffect(() => {
     if (selectedAudio && mode !== 'text-to-image') {
       setSettings(prev => {
-        if (shouldVideoGenerateWithLtxApi) {
+        if (shouldVideoGenerateWithLtxApi && !appSettings.comfyuiEnabled) {
           return sanitizeForcedApiVideoSettings({ ...prev, model: 'pro' }, { hasAudio: true })
         }
         return prev.model !== 'pro' ? { ...prev, model: 'pro' } : prev
@@ -118,7 +118,7 @@ export function Playground() {
   const [icLoraInput, setIcLoraInput] = useState({
     videoUrl: null as string | null,
     videoPath: null as string | null,
-    conditioningType: 'canny' as 'canny' | 'depth',
+    conditioningType: 'canny' as 'canny' | 'depth' | 'pose',
     conditioningStrength: 1.0,
     ready: false,
   })
@@ -158,7 +158,7 @@ export function Playground() {
       // Text-to-image behavior remains tied to raw forceApiGenerations in useGeneration.
       generateImage(prompt, settings)
     } else {
-      const effectiveVideoSettings = shouldVideoGenerateWithLtxApi
+      const effectiveVideoSettings = (shouldVideoGenerateWithLtxApi && !appSettings.comfyuiEnabled)
         ? sanitizeForcedApiVideoSettings(settings)
         : settings
       // Auto-detect: if image is loaded → I2V, otherwise → T2V
@@ -247,7 +247,7 @@ export function Playground() {
         
         <div className="flex items-center gap-4 pr-20">
           {/* Model Status Dropdown */}
-          {!forceApiGenerations && <ModelStatusDropdown />}
+          {!forceApiGenerations && !appSettings.comfyuiEnabled && <ModelStatusDropdown />}
           
           {/* GPU Info */}
           {status.gpuInfo && (
@@ -268,7 +268,7 @@ export function Playground() {
               mode={mode}
               onModeChange={handleModeChange}
               disabled={isBusy}
-              showIcLora={!forceApiGenerations}
+              showIcLora={!forceApiGenerations || appSettings.comfyuiEnabled}
             />
 
             {/* Image Upload - Always shown in video mode (optional: makes it I2V) */}
@@ -306,6 +306,7 @@ export function Playground() {
                   onConditioningStrengthChange={setIcLoraStrength}
                   outputVideoUrl={icLoraResult?.videoUrl || null}
                   outputVideoPath={icLoraResult?.videoPath || null}
+                  comfyuiEnabled={appSettings.comfyuiEnabled}
                   onChange={setIcLoraInput}
                 />
 

@@ -386,7 +386,7 @@ export function useGeneration(): UseGenerationReturn {
     prompt: string,
     settings: GenerationSettings
   ) => {
-    if (forceApiGenerations) {
+    if (forceApiGenerations && !appSettings.comfyuiEnabled) {
       try {
         const response = await backendFetch('/api/settings')
         if (response.ok) {

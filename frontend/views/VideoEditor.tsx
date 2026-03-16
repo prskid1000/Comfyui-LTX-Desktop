@@ -1082,7 +1082,7 @@ export function VideoEditor() {
     projectId: currentProjectId ?? '',
     shouldVideoGenerateWithLtxApi,
   })
-  const canUseIcLora = !forceApiGenerations
+  const canUseIcLora = !forceApiGenerations || appSettings.comfyuiEnabled
   
   useEditorKeyboard({
     refs: {

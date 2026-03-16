@@ -7,7 +7,7 @@ import { backendFetch } from '../lib/backend'
 import { logger } from '../lib/logger'
 import { fileUrlToPath } from '../lib/url-to-path'
 
-export type ICLoraConditioningType = 'canny' | 'depth'
+export type ICLoraConditioningType = 'canny' | 'depth' | 'pose'
 
 type DownloadStatus = 'idle' | 'downloading' | 'complete' | 'error'
 
@@ -50,6 +50,7 @@ interface ICLoraPanelProps {
   onConditioningStrengthChange?: (strength: number) => void
   outputVideoUrl?: string | null
   outputVideoPath?: string | null
+  comfyuiEnabled?: boolean
   onChange?: (data: {
     videoUrl: string | null
     videoPath: string | null
@@ -62,6 +63,7 @@ interface ICLoraPanelProps {
 export const CONDITIONING_TYPES: { value: ICLoraConditioningType; label: string; desc: string }[] = [
   { value: 'canny', label: 'Canny Edges', desc: 'Edge detection' },
   { value: 'depth', label: 'Depth Map', desc: 'Estimated depth' },
+  { value: 'pose', label: 'Pose Control', desc: 'Body pose' },
 ]
 
 const IC_LORA_MODEL_IDS = ['ic_lora', 'depth_processor'] as const
@@ -95,6 +97,7 @@ export function ICLoraPanel({
   onConditioningStrengthChange,
   outputVideoUrl,
   outputVideoPath: _outputVideoPath,
+  comfyuiEnabled = false,
   onChange,
 }: ICLoraPanelProps) {
   const inputVideoRef = useRef<HTMLVideoElement>(null)
@@ -117,7 +120,8 @@ export function ICLoraPanel({
   const [downloadSessionId, setDownloadSessionId] = useState<string | null>(null)
   const [extractError, setExtractError] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
-  const icLoraReady = IC_LORA_MODEL_IDS.every(id => icModelDownloaded[id])
+  // ComfyUI has its own LoRA models — skip native model check
+  const icLoraReady = comfyuiEnabled || IC_LORA_MODEL_IDS.every(id => icModelDownloaded[id])
 
   useEffect(() => {
     if (resetKey === undefined) return
@@ -247,6 +251,8 @@ export function ICLoraPanel({
   const isExtractingRef = useRef(false)
   const extractConditioning = useCallback(async () => {
     if (!inputVideoPath || isExtractingRef.current || !icLoraReady) return
+    // ComfyUI handles conditioning internally — no native extraction needed
+    if (comfyuiEnabled) return
     isExtractingRef.current = true
     setIsExtracting(true)
     setExtractError(null)

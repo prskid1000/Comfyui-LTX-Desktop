@@ -1009,7 +1009,7 @@ export function GenSpace() {
 
   useEffect(() => {
     if (!genSpaceIcLoraSource) return
-    if (forceApiGenerations) {
+    if (forceApiGenerations && !appSettings.comfyuiEnabled) {
       setGenSpaceIcLoraSource(null)
       return
     }
@@ -1028,7 +1028,7 @@ export function GenSpace() {
   }, [genSpaceIcLoraSource, forceApiGenerations, setGenSpaceIcLoraSource])
 
   useEffect(() => {
-    if (forceApiGenerations && mode === 'ic-lora') {
+    if (forceApiGenerations && !appSettings.comfyuiEnabled && mode === 'ic-lora') {
       setMode('video')
     }
   }, [forceApiGenerations, mode])
@@ -1401,7 +1401,7 @@ export function GenSpace() {
   }
 
   const handleIcLora = (videoAsset: Asset) => {
-    if (forceApiGenerations) return
+    if (forceApiGenerations && !appSettings.comfyuiEnabled) return
     setMode('ic-lora')
     setPrompt('')
     setActiveIcLoraSource(null)
@@ -1591,7 +1591,7 @@ export function GenSpace() {
                   onDragStart={handleDragStart}
                   onCreateVideo={handleCreateVideo}
                   onRetake={handleRetake}
-                  onIcLora={!forceApiGenerations ? handleIcLora : undefined}
+                  onIcLora={(!forceApiGenerations || appSettings.comfyuiEnabled) ? handleIcLora : undefined}
                   onToggleFavorite={() => currentProjectId && toggleFavorite(currentProjectId, asset.id)}
                 />
               ))}
@@ -1615,7 +1615,7 @@ export function GenSpace() {
         </div>
       )}
 
-      {mode === 'ic-lora' && !forceApiGenerations && (
+      {mode === 'ic-lora' && (!forceApiGenerations || appSettings.comfyuiEnabled) && (
         <div className="absolute inset-x-0 top-0 bottom-[160px] px-4 pt-4 pb-4 flex flex-col overflow-hidden">
           <ICLoraPanel
             initialVideoUrl={icLoraInitial.videoUrl}
@@ -1630,6 +1630,7 @@ export function GenSpace() {
             onConditioningStrengthChange={setIcLoraStrength}
             outputVideoUrl={icLoraResult?.videoUrl || null}
             outputVideoPath={icLoraResult?.videoPath || null}
+            comfyuiEnabled={appSettings.comfyuiEnabled}
             onChange={setIcLoraInput}
           />
         </div>
@@ -1648,7 +1649,7 @@ export function GenSpace() {
         <PromptBar
           mode={mode}
           onModeChange={setMode}
-          canUseIcLora={!forceApiGenerations}
+          canUseIcLora={!forceApiGenerations || appSettings.comfyuiEnabled}
           prompt={prompt}
           onPromptChange={setPrompt}
           onGenerate={handleGenerate}
