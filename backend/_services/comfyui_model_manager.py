@@ -143,14 +143,6 @@ REQUIRED_MODELS: list[RequiredModel] = [
         size_hint="~2.5 GB",
         description="IC-LoRA detailer",
     ),
-    RequiredModel(
-        filename="ltx-2-19b-distilled-lora-384.safetensors",
-        folder_type="loras",
-        repo_id="Lightricks/LTX-2",
-        repo_filename="ltx-2-19b-distilled-lora-384.safetensors",
-        size_hint="~7.67 GB",
-        description="Distilled LoRA for temporal inpainting",
-    ),
     # Upscalers
     RequiredModel(
         filename="ltx-2-spatial-upscaler-x2-1.0.safetensors",

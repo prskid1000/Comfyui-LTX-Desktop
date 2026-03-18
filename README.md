@@ -205,7 +205,6 @@ All models go in `D:\.comfyui\ComfyUI\models\`. The app can auto-download missin
 | `ltx-2-19b-ic-lora-canny-control.safetensors` | ~625 MB | `models/loras/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
 | `ltx-2-19b-ic-lora-pose-control.safetensors` | ~625 MB | `models/loras/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
 | `ltx-2-19b-ic-lora-detailer.safetensors` | ~2.5 GB | `models/loras/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
-| `ltx-2-19b-distilled-lora-384.safetensors` | ~7.67 GB | `models/loras/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
 
 #### Upscalers
 
@@ -248,7 +247,6 @@ huggingface-cli download Lightricks/LTX-2 ltx-2-19b-ic-lora-depth-control.safete
 huggingface-cli download Lightricks/LTX-2 ltx-2-19b-ic-lora-canny-control.safetensors --local-dir loras
 huggingface-cli download Lightricks/LTX-2 ltx-2-19b-ic-lora-pose-control.safetensors --local-dir loras
 huggingface-cli download Lightricks/LTX-2 ltx-2-19b-ic-lora-detailer.safetensors --local-dir loras
-huggingface-cli download Lightricks/LTX-2 ltx-2-19b-distilled-lora-384.safetensors --local-dir loras
 
 # Upscalers
 huggingface-cli download Lightricks/LTX-2 ltx-2-spatial-upscaler-x2-1.0.safetensors --local-dir latent_upscale_models

@@ -6,15 +6,6 @@
     "class_type": "UnetLoaderGGUF",
     "_meta": { "title": "Unet Loader (GGUF)" }
   },
-  "2": {
-    "inputs": {
-      "lora_name": "ltx-2-19b-distilled-lora-384.safetensors",
-      "strength_model": 0.7,
-      "model": ["1", 0]
-    },
-    "class_type": "LoraLoaderModelOnly",
-    "_meta": { "title": "Distilled LoRA" }
-  },
   "3": {
     "inputs": {
       "clip_name1": "gemma_3_12B_it_fp8_e4m3fn.safetensors",
@@ -133,7 +124,7 @@
   "42": {
     "inputs": {
       "cfg": 1,
-      "model": ["2", 0],
+      "model": ["1", 0],
       "positive": ["40", 0],
       "negative": ["40", 1]
     },
@@ -159,7 +150,7 @@
       "scheduler": "simple",
       "steps": 8,
       "denoise": 1,
-      "model": ["2", 0]
+      "model": ["1", 0]
     },
     "class_type": "BasicScheduler",
     "_meta": { "title": "BasicScheduler" }
