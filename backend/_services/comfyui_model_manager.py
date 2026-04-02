@@ -37,12 +37,12 @@ class RequiredModel:
 REQUIRED_MODELS: list[RequiredModel] = [
     # UNet / Diffusion models
     RequiredModel(
-        filename="ltx-2-19b-distilled_Q4_K_M.gguf",
+        filename="ltx-2.3-22b-distilled-Q4_K_M.gguf",
         folder_type="unet",
-        repo_id="Kijai/LTXV2_comfy",
-        repo_filename="diffusion_models/ltx-2-19b-distilled_Q4_K_M.gguf",
-        size_hint="~10 GB",
-        description="LTX-2 19B distilled video model (GGUF Q4)",
+        repo_id="Lightricks/LTX-Video",
+        repo_filename="ltx-2.3-22b-distilled-Q4_K_M.gguf",
+        size_hint="~12 GB",
+        description="LTX-2.3 22B distilled video model (GGUF Q4)",
     ),
     RequiredModel(
         filename="flux1-kontext-dev-Q8_0.gguf",
@@ -78,29 +78,29 @@ REQUIRED_MODELS: list[RequiredModel] = [
         description="Gemma 3 12B text encoder (FP8) for LTX-2",
     ),
     RequiredModel(
-        filename="ltx-2-19b-embeddings_connector_distill_bf16.safetensors",
+        filename="ltx-2.3-22b-distilled_embeddings_connectors.safetensors",
         folder_type="clip",
-        repo_id="Kijai/LTXV2_comfy",
-        repo_filename="text_encoders/ltx-2-19b-embeddings_connector_distill_bf16.safetensors",
+        repo_id="Lightricks/LTX-Video",
+        repo_filename="ltx-2.3-22b-distilled_embeddings_connectors.safetensors",
         size_hint="~1.5 GB",
-        description="LTX-2 embeddings connector for DualCLIP",
+        description="LTX-2.3 embeddings connector for DualCLIP",
     ),
     # VAE
     RequiredModel(
-        filename="LTX2_video_vae_bf16.safetensors",
+        filename="ltx-2.3-22b-distilled_video_vae.safetensors",
         folder_type="vae",
-        repo_id="Kijai/LTXV2_comfy",
-        repo_filename="vae/LTX2_video_vae_bf16.safetensors",
+        repo_id="Lightricks/LTX-Video",
+        repo_filename="ltx-2.3-22b-distilled_video_vae.safetensors",
         size_hint="~330 MB",
-        description="LTX-2 video VAE (BF16)",
+        description="LTX-2.3 video VAE (BF16)",
     ),
     RequiredModel(
-        filename="LTX2_audio_vae_bf16.safetensors",
+        filename="ltx-2.3-22b-distilled_audio_vae.safetensors",
         folder_type="vae",
-        repo_id="Kijai/LTXV2_comfy",
-        repo_filename="vae/LTX2_audio_vae_bf16.safetensors",
+        repo_id="Lightricks/LTX-Video",
+        repo_filename="ltx-2.3-22b-distilled_audio_vae.safetensors",
         size_hint="~330 MB",
-        description="LTX-2 audio VAE (BF16)",
+        description="LTX-2.3 audio VAE (BF16)",
     ),
     RequiredModel(
         filename="flux_kontext_vae.safetensors",
@@ -145,20 +145,20 @@ REQUIRED_MODELS: list[RequiredModel] = [
     ),
     # Upscalers
     RequiredModel(
-        filename="ltx-2-spatial-upscaler-x2-1.0.safetensors",
+        filename="ltx-2.3-spatial-upscaler-x2-1.1.safetensors",
         folder_type="latent_upscale_models",
-        repo_id="Lightricks/LTX-2",
-        repo_filename="ltx-2-spatial-upscaler-x2-1.0.safetensors",
+        repo_id="Lightricks/LTX-Video",
+        repo_filename="ltx-2.3-spatial-upscaler-x2-1.1.safetensors",
         size_hint="~996 MB",
-        description="LTX-2 spatial upscaler (2x)",
+        description="LTX-2.3 spatial upscaler (2x)",
     ),
     RequiredModel(
-        filename="ltx-2-temporal-upscaler-x2-1.0.safetensors",
+        filename="ltx-2.3-temporal-upscaler-x2-1.0.safetensors",
         folder_type="latent_upscale_models",
-        repo_id="Lightricks/LTX-2",
-        repo_filename="ltx-2-temporal-upscaler-x2-1.0.safetensors",
+        repo_id="Lightricks/LTX-Video",
+        repo_filename="ltx-2.3-temporal-upscaler-x2-1.0.safetensors",
         size_hint="~262 MB",
-        description="LTX-2 temporal upscaler (2x frames)",
+        description="LTX-2.3 temporal upscaler (2x frames)",
     ),
 ]
 

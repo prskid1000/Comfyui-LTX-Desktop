@@ -216,7 +216,7 @@
   },
   "24": {
     "inputs": {
-      "vae_name": "LTX2_video_vae_bf16.safetensors"
+      "vae_name": "ltx-2.3-22b-distilled_video_vae.safetensors"
     },
     "class_type": "VAELoader",
     "_meta": {
@@ -247,7 +247,7 @@
   },
   "1891": {
     "inputs": {
-      "unet_name": "ltx-2-19b-distilled_Q4_K_M.gguf"
+      "unet_name": "ltx-2.3-22b-distilled-Q4_K_M.gguf"
     },
     "class_type": "UnetLoaderGGUF",
     "_meta": {

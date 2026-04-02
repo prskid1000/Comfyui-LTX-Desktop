@@ -45,7 +45,7 @@ DEFAULT_MODEL_DOWNLOAD_SPECS: dict[ModelFileType, ModelFileDownloadSpec] = {
         description="Main transformer model",
     ),
     "upsampler": ModelFileDownloadSpec(
-        relative_path=Path("ltx-2.3-spatial-upscaler-x2-1.0.safetensors"),
+        relative_path=Path("ltx-2.3-spatial-upscaler-x2-1.1.safetensors"),
         expected_size_bytes=1_900_000_000,
         is_folder=False,
         repo_id="Lightricks/LTX-2.3",

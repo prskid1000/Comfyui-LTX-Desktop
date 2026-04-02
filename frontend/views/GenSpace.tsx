@@ -685,7 +685,7 @@ function PromptBar({
               options={
                 comfyuiEnabled
                   ? [
-                      { value: 'fast', label: 'LTX-2 19B (ComfyUI)' },
+                      { value: 'fast', label: 'LTX-2.3 22B (ComfyUI)' },
                     ]
                   : shouldVideoGenerateWithLtxApi
                     ? [
@@ -701,7 +701,7 @@ function PromptBar({
                   <LightricksIcon className="h-3.5 w-3.5" />
                   <span className="text-zinc-300 font-medium">
                     {comfyuiEnabled
-                      ? 'LTX-2 19B (ComfyUI)'
+                      ? 'LTX-2.3 22B (ComfyUI)'
                       : shouldVideoGenerateWithLtxApi
                         ? (settings.model === 'pro' ? 'LTX-2.3 Pro (API)' : 'LTX-2.3 Fast (API)')
                         : 'LTX 2.3 Fast'}

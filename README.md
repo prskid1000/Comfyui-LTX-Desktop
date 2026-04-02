@@ -19,16 +19,16 @@ LTX Desktop with a built-in ComfyUI proxy layer that routes all generation (vide
 
 | Mode | Workflow | Model |
 |------|----------|-------|
-| **Text-to-Video (T2V)** | `av_movie.json` | LTX-2 19B GGUF (Q4_K_M) |
-| **Image-to-Video (I2V)** | `av_movie.json` | LTX-2 19B + guide image |
-| **Audio-to-Video (A2V)** | `av_movie.json` | LTX-2 19B + audio VAE |
+| **Text-to-Video (T2V)** | `av_movie.json` | LTX-2.3 22B GGUF (Q4_K_M) |
+| **Image-to-Video (I2V)** | `av_movie.json` | LTX-2.3 22B + guide image |
+| **Audio-to-Video (A2V)** | `av_movie.json` | LTX-2.3 22B + audio VAE |
 | **Text-to-Image** | `image_scene.json` | Flux Kontext GGUF (Q8_0) |
 | **Character Image** | `image_character.json` | Flux Kontext GGUF (Q8_0) |
 | **IC-LoRA (Depth)** | `av_movie.json` + LoRA | Depth control LoRA |
 | **IC-LoRA (Canny)** | `av_movie.json` + LoRA | Canny control LoRA |
 | **IC-LoRA (Pose)** | `av_movie.json` + LoRA | Pose control LoRA |
 | **IC-LoRA (Detailer)** | `av_movie.json` + LoRA | Detailer enhancement LoRA |
-| **Retake (Temporal Inpainting)** | `retake_inpaint.json` | LTX-2 19B + distilled LoRA |
+| **Retake (Temporal Inpainting)** | `retake_inpaint.json` | LTX-2.3 22B + distilled LoRA |
 
 ### Additional Features
 
@@ -177,7 +177,7 @@ All models go in `D:\.comfyui\ComfyUI\models\`. The app can auto-download missin
 
 | File | Size | Location | Source |
 |------|------|----------|--------|
-| `ltx-2-19b-distilled_Q4_K_M.gguf` | ~10 GB | `models/unet/` | [Kijai/LTXV2_comfy](https://huggingface.co/Kijai/LTXV2_comfy) |
+| `ltx-2.3-22b-distilled-Q4_K_M.gguf` | ~12 GB | `models/unet/` | [Lightricks/LTX-Video](https://huggingface.co/Lightricks/LTX-Video) |
 | `flux1-kontext-dev-Q8_0.gguf` | ~12.7 GB | `models/unet/` | [QuantStack/FLUX.1-Kontext-dev-GGUF](https://huggingface.co/QuantStack/FLUX.1-Kontext-dev-GGUF) |
 
 #### CLIP / Text Encoders
@@ -185,7 +185,7 @@ All models go in `D:\.comfyui\ComfyUI\models\`. The app can auto-download missin
 | File | Size | Location | Source |
 |------|------|----------|--------|
 | `gemma_3_12B_it_fp8_e4m3fn.safetensors` | ~12 GB | `models/text_encoders/` | [Kijai/LTXV2_comfy](https://huggingface.co/Kijai/LTXV2_comfy) |
-| `ltx-2-19b-embeddings_connector_distill_bf16.safetensors` | ~1.5 GB | `models/clip/` | [Kijai/LTXV2_comfy](https://huggingface.co/Kijai/LTXV2_comfy) |
+| `ltx-2.3-22b-distilled_embeddings_connectors.safetensors` | ~1.5 GB | `models/clip/` | [Lightricks/LTX-Video](https://huggingface.co/Lightricks/LTX-Video) |
 | `t5xxl_fp8_e4m3fn.safetensors` | ~4.9 GB | `models/clip/` | [comfyanonymous/flux_text_encoders](https://huggingface.co/comfyanonymous/flux_text_encoders) |
 | `clip_l.safetensors` | ~246 MB | `models/clip/` | [comfyanonymous/flux_text_encoders](https://huggingface.co/comfyanonymous/flux_text_encoders) |
 
@@ -193,8 +193,8 @@ All models go in `D:\.comfyui\ComfyUI\models\`. The app can auto-download missin
 
 | File | Size | Location | Source |
 |------|------|----------|--------|
-| `LTX2_video_vae_bf16.safetensors` | ~330 MB | `models/vae/` | [Kijai/LTXV2_comfy](https://huggingface.co/Kijai/LTXV2_comfy) |
-| `LTX2_audio_vae_bf16.safetensors` | ~330 MB | `models/vae/` | [Kijai/LTXV2_comfy](https://huggingface.co/Kijai/LTXV2_comfy) |
+| `ltx-2.3-22b-distilled_video_vae.safetensors` | ~330 MB | `models/vae/` | [Lightricks/LTX-Video](https://huggingface.co/Lightricks/LTX-Video) |
+| `ltx-2.3-22b-distilled_audio_vae.safetensors` | ~330 MB | `models/vae/` | [Lightricks/LTX-Video](https://huggingface.co/Lightricks/LTX-Video) |
 | `flux_kontext_vae.safetensors` | ~335 MB | `models/vae/` | [black-forest-labs/FLUX.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev) |
 
 #### LoRAs
@@ -210,8 +210,8 @@ All models go in `D:\.comfyui\ComfyUI\models\`. The app can auto-download missin
 
 | File | Size | Location | Source |
 |------|------|----------|--------|
-| `ltx-2-spatial-upscaler-x2-1.0.safetensors` | ~996 MB | `models/latent_upscale_models/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
-| `ltx-2-temporal-upscaler-x2-1.0.safetensors` | ~262 MB | `models/latent_upscale_models/` | [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) |
+| `ltx-2.3-spatial-upscaler-x2-1.1.safetensors` | ~996 MB | `models/latent_upscale_models/` | [Lightricks/LTX-Video](https://huggingface.co/Lightricks/LTX-Video) |
+| `ltx-2.3-temporal-upscaler-x2-1.0.safetensors` | ~262 MB | `models/latent_upscale_models/` | [Lightricks/LTX-Video](https://huggingface.co/Lightricks/LTX-Video) |
 
 **Total model size: ~55 GB**
 
@@ -228,18 +228,18 @@ pip install huggingface_hub
 cd ComfyUI\models
 
 # UNet
-huggingface-cli download Kijai/LTXV2_comfy diffusion_models/ltx-2-19b-distilled_Q4_K_M.gguf --local-dir unet
+huggingface-cli download Lightricks/LTX-Video ltx-2.3-22b-distilled-Q4_K_M.gguf --local-dir unet
 huggingface-cli download QuantStack/FLUX.1-Kontext-dev-GGUF FLUX.1-Kontext-dev-Q8_0.gguf --local-dir unet
 
 # Text Encoders
 huggingface-cli download Kijai/LTXV2_comfy text_encoders/gemma_3_12B_it_fp8_e4m3fn.safetensors --local-dir text_encoders
-huggingface-cli download Kijai/LTXV2_comfy text_encoders/ltx-2-19b-embeddings_connector_distill_bf16.safetensors --local-dir clip
+huggingface-cli download Lightricks/LTX-Video ltx-2.3-22b-distilled_embeddings_connectors.safetensors --local-dir clip
 huggingface-cli download comfyanonymous/flux_text_encoders t5xxl_fp8_e4m3fn.safetensors --local-dir clip
 huggingface-cli download comfyanonymous/flux_text_encoders clip_l.safetensors --local-dir clip
 
 # VAE
-huggingface-cli download Kijai/LTXV2_comfy vae/LTX2_video_vae_bf16.safetensors --local-dir vae
-huggingface-cli download Kijai/LTXV2_comfy vae/LTX2_audio_vae_bf16.safetensors --local-dir vae
+huggingface-cli download Lightricks/LTX-Video ltx-2.3-22b-distilled_video_vae.safetensors --local-dir vae
+huggingface-cli download Lightricks/LTX-Video ltx-2.3-22b-distilled_audio_vae.safetensors --local-dir vae
 # Flux VAE: download from black-forest-labs/FLUX.1-dev vae/diffusion_pytorch_model.safetensors and rename to flux_kontext_vae.safetensors
 
 # LoRAs
@@ -249,8 +249,8 @@ huggingface-cli download Lightricks/LTX-2 ltx-2-19b-ic-lora-pose-control.safeten
 huggingface-cli download Lightricks/LTX-2 ltx-2-19b-ic-lora-detailer.safetensors --local-dir loras
 
 # Upscalers
-huggingface-cli download Lightricks/LTX-2 ltx-2-spatial-upscaler-x2-1.0.safetensors --local-dir latent_upscale_models
-huggingface-cli download Lightricks/LTX-2 ltx-2-temporal-upscaler-x2-1.0.safetensors --local-dir latent_upscale_models
+huggingface-cli download Lightricks/LTX-Video ltx-2.3-spatial-upscaler-x2-1.1.safetensors --local-dir latent_upscale_models
+huggingface-cli download Lightricks/LTX-Video ltx-2.3-temporal-upscaler-x2-1.0.safetensors --local-dir latent_upscale_models
 
 deactivate
 ```

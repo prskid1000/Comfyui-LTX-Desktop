@@ -136,7 +136,7 @@ export function SettingsPanel({
           onChange={() => {}}
           disabled={disabled}
         >
-          <option value="fast">LTX-2 19B (ComfyUI)</option>
+          <option value="fast">LTX-2.3 22B (ComfyUI)</option>
         </Select>
       ) : !forceApiGenerations ? (
         <Select
